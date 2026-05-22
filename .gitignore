@@ -16,3 +16,10 @@
 local.properties
 .env
 debug.keystore
+
+# Flutter and Dart ignore rules
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
