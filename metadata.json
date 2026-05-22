@@ -1,0 +1,6 @@
+{
+  "name": "Aroma Bistro",
+  "description": "Systems design and high-fidelity simulated client-staff application for QR-based food ordering system with category filtering, cart checkout, real-time activity status, and interactive order lifecycle dashboard.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
