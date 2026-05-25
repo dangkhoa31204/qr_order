@@ -41,8 +41,11 @@ class MockQrScannerDialog extends StatelessWidget {
                 ),
                 IconButton(
                   onPressed: onClose,
-                  icon: const Icon(Icons.close, color: AromaColors.coffeeTextSub),
-                )
+                  icon: const Icon(
+                    Icons.close,
+                    color: AromaColors.coffeeTextSub,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -77,19 +80,21 @@ class MockQrScannerDialog extends StatelessWidget {
                           child: Container(
                             height: 2,
                             color: Colors.greenAccent,
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Colors.greenAccent,
-                                blurRadius: 10,
-                                spreadRadius: 2,
-                              ),
-                            ],
+                            decoration: const BoxDecoration(
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.greenAccent,
+                                  blurRadius: 10,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
                           ),
                         );
                       },
                       onEnd: () {}, // loops handled implicitly
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
@@ -110,7 +115,8 @@ class MockQrScannerDialog extends StatelessWidget {
                 child: ListView.separated(
                   shrinkWrap: true,
                   itemCount: systemTables.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 8),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final t = systemTables[index];
                     return InkWell(
@@ -121,7 +127,9 @@ class MockQrScannerDialog extends StatelessWidget {
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                            color: AromaColors.coffeeCardBorder.withOpacity(0.8),
+                            color: AromaColors.coffeeCardBorder.withOpacity(
+                              0.8,
+                            ),
                           ),
                         ),
                         child: Row(
@@ -129,10 +137,15 @@ class MockQrScannerDialog extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: AromaColors.coffeeSecondary.withOpacity(0.5),
+                                color: AromaColors.coffeeSecondary.withOpacity(
+                                  0.5,
+                                ),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Text("🍽️", style: TextStyle(fontSize: 18)),
+                              child: const Text(
+                                "🍽️",
+                                style: TextStyle(fontSize: 18),
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(

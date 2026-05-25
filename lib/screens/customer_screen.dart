@@ -37,7 +37,13 @@ class CustomerScreen extends StatefulWidget {
 class _CustomerScreenState extends State<CustomerScreen> {
   String _activeCategory = "All";
   String _searchQuery = "";
-  final List<String> _categories = ["All", "Coffees", "Teas", "Pastries", "Brunch"];
+  final List<String> _categories = [
+    "All",
+    "Coffees",
+    "Teas",
+    "Pastries",
+    "Brunch",
+  ];
   final TextEditingController _noteController = TextEditingController();
 
   @override
@@ -55,7 +61,10 @@ class _CustomerScreenState extends State<CustomerScreen> {
 
     widget.cart.forEach((itemId, qty) {
       if (qty > 0) {
-        final item = widget.menuItems.firstWhere((it) => it.id == itemId, orElse: () => initialMenuItems.first);
+        final item = widget.menuItems.firstWhere(
+          (it) => it.id == itemId,
+          orElse: () => initialMenuItems.first,
+        );
         subtotal += item.price * qty;
         totalItemsCount += qty;
         cartItems.add(CartItem(menuItem: item, quantity: qty));
@@ -67,21 +76,34 @@ class _CustomerScreenState extends State<CustomerScreen> {
 
     // Menu filtering
     final filteredItems = widget.menuItems.where((item) {
-      final matchesCategory = _activeCategory == "All" || item.category == _activeCategory;
-      final matchesSearch = item.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          item.vietnameseName.toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesCategory =
+          _activeCategory == "All" || item.category == _activeCategory;
+      final matchesSearch =
+          item.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          item.vietnameseName.toLowerCase().contains(
+            _searchQuery.toLowerCase(),
+          );
       return matchesCategory && matchesSearch;
     }).toList();
 
     return Scaffold(
       backgroundColor: AromaColors.coffeeBackground,
-      bottomNavigationBar: _buildBottomStatusBars(totalItemsCount, subtotal, cartItems, taxAndService, totalAmount),
+      bottomNavigationBar: _buildBottomStatusBars(
+        totalItemsCount,
+        subtotal,
+        cartItems,
+        taxAndService,
+        totalAmount,
+      ),
       body: SafeArea(
         child: Column(
           children: [
             // Premium Elegant Header
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 16.0,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -96,7 +118,10 @@ class _CustomerScreenState extends State<CustomerScreen> {
                             borderRadius: BorderRadius.circular(14),
                           ),
                           alignment: Alignment.center,
-                          child: const Text("☕", style: TextStyle(fontSize: 22)),
+                          child: const Text(
+                            "☕",
+                            style: TextStyle(fontSize: 22),
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -131,9 +156,9 @@ class _CustomerScreenState extends State<CustomerScreen> {
                                       color: AromaColors.coffeeTextSub,
                                       fontWeight: FontWeight.w500,
                                     ),
-                                  )
+                                  ),
                                 ],
-                              )
+                              ),
                             ],
                           ),
                         ),
@@ -146,7 +171,11 @@ class _CustomerScreenState extends State<CustomerScreen> {
                     children: [
                       IconButton(
                         onPressed: widget.onOpenQrScanner,
-                        icon: const Icon(Icons.qr_code_scanner, size: 18, color: AromaColors.coffeePrimary),
+                        icon: const Icon(
+                          Icons.qr_code_scanner,
+                          size: 18,
+                          color: AromaColors.coffeePrimary,
+                        ),
                         style: IconButton.styleFrom(
                           backgroundColor: AromaColors.coffeeSecondary,
                           minimumSize: const Size(42, 42),
@@ -155,18 +184,33 @@ class _CustomerScreenState extends State<CustomerScreen> {
                       const SizedBox(width: 8),
                       ElevatedButton.icon(
                         onPressed: widget.onBackToGateway,
-                        icon: const Icon(Icons.swap_horiz, size: 16, color: Colors.white),
-                        label: const Text("Đổi Vai", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                        icon: const Icon(
+                          Icons.swap_horiz,
+                          size: 16,
+                          color: Colors.white,
+                        ),
+                        label: const Text(
+                          "Đổi Vai",
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AromaColors.coffeePrimary,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 0,
+                          ),
                           minimumSize: const Size(0, 42),
                         ),
                       ),
                     ],
-                  )
+                  ),
                 ],
               ),
             ),
@@ -196,7 +240,9 @@ class _CustomerScreenState extends State<CustomerScreen> {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
-                        color: isSelected ? Colors.white : AromaColors.coffeeTextSub,
+                        color: isSelected
+                            ? Colors.white
+                            : AromaColors.coffeeTextSub,
                       ),
                     ),
                     selected: isSelected,
@@ -210,10 +256,14 @@ class _CustomerScreenState extends State<CustomerScreen> {
                     selectedColor: AromaColors.coffeePrimary,
                     backgroundColor: AromaColors.coffeeSecondary,
                     checkmarkColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
-                    borderOnForeground: false,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(50),
+                    ),
                     side: BorderSide.none,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                   );
                 },
               ),
@@ -221,28 +271,41 @@ class _CustomerScreenState extends State<CustomerScreen> {
 
             // Search Bar
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 8.0,
+              ),
               child: TextField(
                 onChanged: (val) {
                   setState(() {
                     _searchQuery = val;
                   });
                 },
-                style: const TextStyle(fontSize: 13, color: AromaColors.coffeeTextDark),
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AromaColors.coffeeTextDark,
+                ),
                 decoration: InputDecoration(
                   hintText: "Tìm món ăn, đồ uống thơm phức...",
                   hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
-                  prefixIcon: const Icon(Icons.search, color: AromaColors.coffeePrimary),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: AromaColors.coffeePrimary,
+                  ),
                   filled: true,
                   fillColor: Colors.white,
                   contentPadding: const EdgeInsets.symmetric(vertical: 0),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(28),
-                    borderSide: const BorderSide(color: AromaColors.coffeeCardBorder),
+                    borderSide: const BorderSide(
+                      color: AromaColors.coffeeCardBorder,
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(28),
-                    borderSide: const BorderSide(color: AromaColors.coffeePrimary),
+                    borderSide: const BorderSide(
+                      color: AromaColors.coffeePrimary,
+                    ),
                   ),
                 ),
               ),
@@ -258,14 +321,22 @@ class _CustomerScreenState extends State<CustomerScreen> {
                           const Text("☕", style: TextStyle(fontSize: 48)),
                           const SizedBox(height: 8),
                           Text(
-                            _searchQuery.isNotEmpty ? "Không tìm thấy món ăn phù hợp" : "Menu rỗng!",
-                            style: const TextStyle(color: AromaColors.coffeeTextSub, fontSize: 14),
-                          )
+                            _searchQuery.isNotEmpty
+                                ? "Không tìm thấy món ăn phù hợp"
+                                : "Menu rỗng!",
+                            style: const TextStyle(
+                              color: AromaColors.coffeeTextSub,
+                              fontSize: 14,
+                            ),
+                          ),
                         ],
                       ),
                     )
                   : ListView.separated(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
                       itemCount: filteredItems.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 16),
                       itemBuilder: (context, index) {
@@ -318,10 +389,14 @@ class _CustomerScreenState extends State<CustomerScreen> {
                     alignment: Alignment.center,
                     child: const Text(
                       "HẾT HÀNG",
-                      style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                      ),
                       textAlign: TextAlign.center,
                     ),
-                  )
+                  ),
               ],
             ),
             const SizedBox(width: 14),
@@ -352,22 +427,33 @@ class _CustomerScreenState extends State<CustomerScreen> {
                     item.description,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11, color: Colors.grey, height: 1.3),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey,
+                      height: 1.3,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
                       Text(
                         "\$${item.price.toStringAsFixed(2)}",
-                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AromaColors.coffeePrimary),
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: AromaColors.coffeePrimary,
+                        ),
                       ),
                       const SizedBox(width: 6),
                       Text(
                         "(~${(item.price * 25000).toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}đ)",
-                        style: const TextStyle(fontSize: 11, color: Colors.grey),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey,
+                        ),
                       ),
                     ],
-                  )
+                  ),
                 ],
               ),
             ),
@@ -379,25 +465,35 @@ class _CustomerScreenState extends State<CustomerScreen> {
                 onPressed: null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AromaColors.coffeeSecondary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   minimumSize: const Size(0, 36),
                 ),
-                child: const Text("Hết", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                child: const Text(
+                  "Hết",
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
               )
             else if (count == 0)
               ElevatedButton(
-                onTap: () => widget.onAddCart(item),
+                onPressed: () => widget.onAddCart(item),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AromaColors.coffeeCardLightBg,
                   foregroundColor: AromaColors.coffeePrimary,
                   elevation: 0,
                   side: const BorderSide(color: AromaColors.coffeeCardBorder),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   minimumSize: const Size(0, 36),
                 ),
-                child: const Text("+ THÊM", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                child: const Text(
+                  "+ THÊM",
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                ),
               )
             else
               Container(
@@ -410,23 +506,41 @@ class _CustomerScreenState extends State<CustomerScreen> {
                   children: [
                     IconButton(
                       onPressed: () => widget.onRemoveCart(item),
-                      icon: const Icon(Icons.remove, size: 14, color: Colors.white),
-                      constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+                      icon: const Icon(
+                        Icons.remove,
+                        size: 14,
+                        color: Colors.white,
+                      ),
+                      constraints: const BoxConstraints.tightFor(
+                        width: 28,
+                        height: 28,
+                      ),
                       padding: EdgeInsets.zero,
                     ),
                     Text(
                       "$count",
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
                     ),
                     IconButton(
                       onPressed: () => widget.onAddCart(item),
-                      icon: const Icon(Icons.add, size: 14, color: Colors.white),
-                      constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+                      icon: const Icon(
+                        Icons.add,
+                        size: 14,
+                        color: Colors.white,
+                      ),
+                      constraints: const BoxConstraints.tightFor(
+                        width: 28,
+                        height: 28,
+                      ),
                       padding: EdgeInsets.zero,
                     ),
                   ],
                 ),
-              )
+              ),
           ],
         ),
       ),
@@ -434,9 +548,16 @@ class _CustomerScreenState extends State<CustomerScreen> {
   }
 
   Widget? _buildBottomStatusBars(
-      int totalItems, double subtotal, List<CartItem> cartItems, double tax, double total) {
+    int totalItems,
+    double subtotal,
+    List<CartItem> cartItems,
+    double tax,
+    double total,
+  ) {
     final showCart = totalItems > 0;
-    final showTracker = widget.activeOrder != null && widget.activeOrder!.status != OrderStatus.paid;
+    final showTracker =
+        widget.activeOrder != null &&
+        widget.activeOrder!.status != OrderStatus.paid;
 
     if (!showCart && !showTracker) return null;
 
@@ -450,7 +571,9 @@ class _CustomerScreenState extends State<CustomerScreen> {
             child: Card(
               elevation: 4,
               color: AromaColors.coffeeTextDark,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
               child: ListTile(
                 onTap: () => _showOrderTrackerDialog(context),
                 leading: Container(
@@ -467,7 +590,11 @@ class _CustomerScreenState extends State<CustomerScreen> {
                   children: [
                     Text(
                       "${widget.activeOrder!.tableLabel} • ${widget.activeOrder!.status.labelVi}",
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
                   ],
                 ),
@@ -475,7 +602,11 @@ class _CustomerScreenState extends State<CustomerScreen> {
                   "Ước lượng: ${widget.activeOrder!.timeMinutes} phút nữa • Chạm để xem",
                   style: const TextStyle(color: Colors.white70, fontSize: 11),
                 ),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.white),
+                trailing: const Icon(
+                  Icons.arrow_forward_ios,
+                  size: 14,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
@@ -485,10 +616,18 @@ class _CustomerScreenState extends State<CustomerScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             child: ElevatedButton(
-              onPressed: () => _showCartBottomSheet(context, cartItems, subtotal, tax, total),
+              onPressed: () => _showCartBottomSheet(
+                context,
+                cartItems,
+                subtotal,
+                tax,
+                total,
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AromaColors.coffeePrimary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 minimumSize: const Size(double.infinity, 56),
               ),
@@ -515,14 +654,22 @@ class _CustomerScreenState extends State<CustomerScreen> {
                       const SizedBox(width: 10),
                       const Text(
                         "Xem giỏ hàng của bạn",
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
-                      )
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
                     ],
                   ),
                   Text(
                     "\$${subtotal.toStringAsFixed(2)}",
-                    style: const TextStyle(color: AromaColors.coffeeGold, fontWeight: FontWeight.bold, fontSize: 16),
-                  )
+                    style: const TextStyle(
+                      color: AromaColors.coffeeGold,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -532,7 +679,12 @@ class _CustomerScreenState extends State<CustomerScreen> {
   }
 
   void _showCartBottomSheet(
-      BuildContext context, List<CartItem> items, double subtotal, double tax, double total) {
+    BuildContext context,
+    List<CartItem> items,
+    double subtotal,
+    double tax,
+    double total,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -567,21 +719,29 @@ class _CustomerScreenState extends State<CustomerScreen> {
                 onIncrease: (item) {
                   widget.onAddCart(item.menuItem);
                   // Refresh modal local state
-                  final idx = items.indexWhere((it) => it.menuItem.id == item.menuItem.id);
+                  final idx = items.indexWhere(
+                    (it) => it.menuItem.id == item.menuItem.id,
+                  );
                   if (idx != -1) {
                     setSheetState(() {
-                      items[idx] = items[idx].copyWith(quantity: items[idx].quantity + 1);
+                      items[idx] = items[idx].copyWith(
+                        quantity: items[idx].quantity + 1,
+                      );
                     });
                   }
                   setState(() {}); // refresh outer screen
                 },
                 onDecrease: (item) {
                   widget.onRemoveCart(item.menuItem);
-                  final idx = items.indexWhere((it) => it.menuItem.id == item.menuItem.id);
+                  final idx = items.indexWhere(
+                    (it) => it.menuItem.id == item.menuItem.id,
+                  );
                   if (idx != -1) {
                     setSheetState(() {
                       if (items[idx].quantity > 1) {
-                        items[idx] = items[idx].copyWith(quantity: items[idx].quantity - 1);
+                        items[idx] = items[idx].copyWith(
+                          quantity: items[idx].quantity - 1,
+                        );
                       } else {
                         items.removeAt(idx);
                       }
@@ -668,18 +828,26 @@ class MainCartSheetContent extends StatelessWidget {
               children: [
                 const Text(
                   "Giỏ Hàng Gọi Món",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AromaColors.coffeeTextDark),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AromaColors.coffeeTextDark,
+                  ),
                 ),
                 Text(
                   tableLabel,
-                  style: const TextStyle(fontSize: 12, color: AromaColors.coffeeTextSub, fontWeight: FontWeight.w500),
-                )
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AromaColors.coffeeTextSub,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ],
             ),
             IconButton(
               onPressed: () => Navigator.pop(context),
               icon: const Icon(Icons.close),
-            )
+            ),
           ],
         ),
         const SizedBox(height: 16),
@@ -687,22 +855,33 @@ class MainCartSheetContent extends StatelessWidget {
           const SizedBox(
             height: 120,
             child: Center(
-              child: Text("Giỏ hàng của bạn đang rỗng", style: TextStyle(color: Colors.grey)),
+              child: Text(
+                "Giỏ hàng của bạn đang rỗng",
+                style: TextStyle(color: Colors.grey),
+              ),
             ),
           )
         else
           Flexible(
             child: ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.4),
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.4,
+              ),
               child: ListView.separated(
                 shrinkWrap: true,
                 itemCount: items.length,
-                separatorBuilder: (_, __) => const Divider(color: AromaColors.coffeeCardBorder, height: 16),
+                separatorBuilder: (_, __) => const Divider(
+                  color: AromaColors.coffeeCardBorder,
+                  height: 16,
+                ),
                 itemBuilder: (context, index) {
                   final it = items[index];
                   return Row(
                     children: [
-                      Text(it.menuItem.emoji, style: const TextStyle(fontSize: 24)),
+                      Text(
+                        it.menuItem.emoji,
+                        style: const TextStyle(fontSize: 24),
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -710,11 +889,19 @@ class MainCartSheetContent extends StatelessWidget {
                           children: [
                             Text(
                               it.menuItem.name,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AromaColors.coffeeTextDark),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: AromaColors.coffeeTextDark,
+                              ),
                             ),
                             Text(
                               "\$${(it.menuItem.price * it.quantity).toStringAsFixed(2)}",
-                              style: const TextStyle(color: AromaColors.coffeePrimary, fontSize: 12, fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                color: AromaColors.coffeePrimary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ],
                         ),
@@ -728,23 +915,41 @@ class MainCartSheetContent extends StatelessWidget {
                           children: [
                             IconButton(
                               onPressed: () => onDecrease(it),
-                              icon: const Icon(Icons.remove, size: 12, color: AromaColors.coffeePrimary),
-                              constraints: const BoxConstraints.tightFor(width: 24, height: 24),
+                              icon: const Icon(
+                                Icons.remove,
+                                size: 12,
+                                color: AromaColors.coffeePrimary,
+                              ),
+                              constraints: const BoxConstraints.tightFor(
+                                width: 24,
+                                height: 24,
+                              ),
                               padding: EdgeInsets.zero,
                             ),
                             Text(
                               "${it.quantity}",
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AromaColors.coffeePrimary),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: AromaColors.coffeePrimary,
+                              ),
                             ),
                             IconButton(
                               onPressed: () => onIncrease(it),
-                              icon: const Icon(Icons.add, size: 12, color: AromaColors.coffeePrimary),
-                              constraints: const BoxConstraints.tightFor(width: 24, height: 24),
+                              icon: const Icon(
+                                Icons.add,
+                                size: 12,
+                                color: AromaColors.coffeePrimary,
+                              ),
+                              constraints: const BoxConstraints.tightFor(
+                                width: 24,
+                                height: 24,
+                              ),
                               padding: EdgeInsets.zero,
                             ),
                           ],
                         ),
-                      )
+                      ),
                     ],
                   );
                 },
@@ -754,13 +959,20 @@ class MainCartSheetContent extends StatelessWidget {
         const SizedBox(height: 12),
         const Text(
           "Ghi chú cho bếp (không hành, ít đường, đá riêng...):",
-          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AromaColors.coffeePrimary),
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: AromaColors.coffeePrimary,
+          ),
         ),
         const SizedBox(height: 6),
         TextField(
           controller: noteController,
           maxLines: 2,
-          style: const TextStyle(fontSize: 12, color: AromaColors.coffeeTextDark),
+          style: const TextStyle(
+            fontSize: 12,
+            color: AromaColors.coffeeTextDark,
+          ),
           decoration: InputDecoration(
             hintText: "Mời bạn nhập lưu ý...",
             filled: true,
@@ -783,9 +995,16 @@ class MainCartSheetContent extends StatelessWidget {
             children: [
               _buildBillRow("Tạm tính:", "\$${subtotal.toStringAsFixed(2)}"),
               const SizedBox(height: 6),
-              _buildBillRow("Thuế VAT & Phí DV (10%):", "\$${tax.toStringAsFixed(2)}"),
+              _buildBillRow(
+                "Thuế VAT & Phí DV (10%):",
+                "\$${tax.toStringAsFixed(2)}",
+              ),
               const Divider(height: 16),
-              _buildBillRow("TỔNG CỘNG:", "\$${total.toStringAsFixed(2)}", isTotal: true),
+              _buildBillRow(
+                "TỔNG CỘNG:",
+                "\$${total.toStringAsFixed(2)}",
+                isTotal: true,
+              ),
             ],
           ),
         ),
@@ -796,10 +1015,15 @@ class MainCartSheetContent extends StatelessWidget {
             backgroundColor: AromaColors.coffeePrimary,
             foregroundColor: Colors.white,
             disabledBackgroundColor: Colors.grey.shade300,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             minimumSize: const Size(double.infinity, 50),
           ),
-          child: const Text("GỬI YÊU CẦU GỌI MÓN MỚI", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+          child: const Text(
+            "GỬI YÊU CẦU GỌI MÓN MỚI",
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          ),
         ),
         const SizedBox(height: 24),
       ],
@@ -823,7 +1047,9 @@ class MainCartSheetContent extends StatelessWidget {
           style: TextStyle(
             fontSize: isTotal ? 15 : 12,
             fontWeight: FontWeight.bold,
-            color: isTotal ? AromaColors.coffeePrimary : AromaColors.coffeeTextDark,
+            color: isTotal
+                ? AromaColors.coffeePrimary
+                : AromaColors.coffeeTextDark,
           ),
         ),
       ],
@@ -868,11 +1094,18 @@ class OrderTrackerDialog extends StatelessWidget {
                     children: [
                       const Text(
                         "Tiến Độ Đơn Hàng",
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AromaColors.coffeeTextDark),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: AromaColors.coffeeTextDark,
+                        ),
                       ),
                       Text(
                         "Mã đơn: ${order.id}",
-                        style: const TextStyle(fontSize: 11, color: AromaColors.coffeeTextSub),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AromaColors.coffeeTextSub,
+                        ),
                       ),
                     ],
                   ),
@@ -912,18 +1145,43 @@ class OrderTrackerDialog extends StatelessWidget {
               const SizedBox(height: 24),
 
               // Interactive Step Stepper Graphics
-              _buildProgressRow(0, "GỬI ĐƠN HÀNG CHỜ DUYỆT", "Chờ bếp xác nhận nấu", currentStep >= 0),
+              _buildProgressRow(
+                0,
+                "GỬI ĐƠN HÀNG CHỜ DUYỆT",
+                "Chờ bếp xác nhận nấu",
+                currentStep >= 0,
+              ),
               _buildConnectorLine(currentStep >= 1),
-              _buildProgressRow(1, "BẾP ĐANG CHẾ BIẾN MÓN", "Món ăn đang được nấu nướng", currentStep >= 1),
+              _buildProgressRow(
+                1,
+                "BẾP ĐANG CHẾ BIẾN MÓN",
+                "Món ăn đang được nấu nướng",
+                currentStep >= 1,
+              ),
               _buildConnectorLine(currentStep >= 2),
-              _buildProgressRow(2, "BÀN ĂN HOÀN THÀNH MÓN", "Mời bạn thưởng thức tại bàn", currentStep >= 2),
+              _buildProgressRow(
+                2,
+                "BÀN ĂN HOÀN THÀNH MÓN",
+                "Mời bạn thưởng thức tại bàn",
+                currentStep >= 2,
+              ),
               _buildConnectorLine(currentStep >= 3),
-              _buildProgressRow(3, "ĐÃ THANH TOÁN XONG", "Chúc quý khách ngày tốt lành", currentStep >= 3),
+              _buildProgressRow(
+                3,
+                "ĐÃ THANH TOÁN XONG",
+                "Chúc quý khách ngày tốt lành",
+                currentStep >= 3,
+              ),
 
               const SizedBox(height: 24),
               const Text(
                 "CHI TIẾT MÓN ORDER:",
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AromaColors.coffeePrimary, letterSpacing: 0.5),
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: AromaColors.coffeePrimary,
+                  letterSpacing: 0.5,
+                ),
               ),
               const SizedBox(height: 8),
 
@@ -933,7 +1191,9 @@ class OrderTrackerDialog extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AromaColors.coffeeCardBorder.withOpacity(0.5)),
+                  border: Border.all(
+                    color: AromaColors.coffeeCardBorder.withOpacity(0.5),
+                  ),
                 ),
                 child: Column(
                   children: [
@@ -945,11 +1205,19 @@ class OrderTrackerDialog extends StatelessWidget {
                           children: [
                             Text(
                               "${it.menuItem.emoji} ${it.menuItem.name} x${it.quantity}",
-                              style: const TextStyle(fontSize: 12, color: AromaColors.coffeeTextDark, fontWeight: FontWeight.w500),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AromaColors.coffeeTextDark,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                             Text(
                               "\$${(it.menuItem.price * it.quantity).toStringAsFixed(2)}",
-                              style: const TextStyle(fontSize: 12, color: AromaColors.coffeePrimary, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AromaColors.coffeePrimary,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ],
                         ),
@@ -966,10 +1234,14 @@ class OrderTrackerDialog extends StatelessWidget {
                         ),
                         child: Text(
                           "Lưu ý: ${order.note}",
-                          style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: AromaColors.coffeeTextSub),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontStyle: FontStyle.italic,
+                            color: AromaColors.coffeeTextSub,
+                          ),
                         ),
                       ),
-                    ]
+                    ],
                   ],
                 ),
               ),
@@ -979,10 +1251,18 @@ class OrderTrackerDialog extends StatelessWidget {
               if (order.status == OrderStatus.pending)
                 TextButton.icon(
                   onPressed: onCancel,
-                  icon: const Icon(Icons.cancel_outlined, color: Colors.redAccent, size: 14),
+                  icon: const Icon(
+                    Icons.cancel_outlined,
+                    color: Colors.redAccent,
+                    size: 14,
+                  ),
                   label: const Text(
                     "HỦY GỌI MÓN (KHI CHỜ DUYỆT)",
-                    style: TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Colors.redAccent,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
             ],
@@ -992,7 +1272,12 @@ class OrderTrackerDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildProgressRow(int step, String title, String subtitle, bool isDone) {
+  Widget _buildProgressRow(
+    int step,
+    String title,
+    String subtitle,
+    bool isDone,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1000,13 +1285,22 @@ class OrderTrackerDialog extends StatelessWidget {
           width: 24,
           height: 24,
           decoration: BoxDecoration(
-            color: isDone ? AromaColors.successGreen : Colors.grey.withOpacity(0.2),
+            color: isDone
+                ? AromaColors.successGreen
+                : Colors.grey.withOpacity(0.2),
             shape: BoxShape.circle,
           ),
           alignment: Alignment.center,
           child: isDone
               ? const Icon(Icons.check, size: 14, color: Colors.white)
-              : Text("${step + 1}", style: const TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold)),
+              : Text(
+                  "${step + 1}",
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
         ),
         const SizedBox(width: 14),
         Expanded(
@@ -1023,11 +1317,14 @@ class OrderTrackerDialog extends StatelessWidget {
               ),
               Text(
                 subtitle,
-                style: const TextStyle(fontSize: 10, color: AromaColors.coffeeTextSub),
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: AromaColors.coffeeTextSub,
+                ),
               ),
             ],
           ),
-        )
+        ),
       ],
     );
   }

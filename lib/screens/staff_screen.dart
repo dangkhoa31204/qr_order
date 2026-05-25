@@ -28,7 +28,8 @@ class StaffScreen extends StatefulWidget {
   State<StaffScreen> createState() => _StaffScreenState();
 }
 
-class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStateMixin {
+class _StaffScreenState extends State<StaffScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -46,15 +47,23 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
   @override
   Widget build(BuildContext context) {
     // Separate active order vs historic/paid orders
-    final activeOrders = widget.orders.where((o) => o.status != OrderStatus.paid).toList();
-    final historicOrders = widget.orders.where((o) => o.status == OrderStatus.paid).toList();
+    final activeOrders = widget.orders
+        .where((o) => o.status != OrderStatus.paid)
+        .toList();
+    final historicOrders = widget.orders
+        .where((o) => o.status == OrderStatus.paid)
+        .toList();
 
     return Scaffold(
       backgroundColor: AromaColors.coffeeBackground,
       appBar: AppBar(
         title: const Text(
           "Staff Dashboard",
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            color: Colors.white,
+          ),
         ),
         centerTitle: false,
         backgroundColor: AromaColors.coffeePrimary,
@@ -64,7 +73,7 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
             onPressed: widget.onBackToGateway,
             icon: const Icon(Icons.logout, color: Colors.white, size: 20),
             tooltip: "Đổi vai trò",
-          )
+          ),
         ],
         bottom: TabBar(
           controller: _tabController,
@@ -97,13 +106,20 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
           children: [
             Container(
               padding: const EdgeInsets.all(24),
-              decoration: const BoxDecoration(color: AromaColors.coffeeSecondary, shape: BoxShape.circle),
+              decoration: const BoxDecoration(
+                color: AromaColors.coffeeSecondary,
+                shape: BoxShape.circle,
+              ),
               child: const Text("📝", style: TextStyle(fontSize: 48)),
             ),
             const SizedBox(height: 16),
             const Text(
               "Chưa có đơn hàng nào gửi lên!",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AromaColors.coffeeTextDark),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+                color: AromaColors.coffeeTextDark,
+              ),
             ),
             const SizedBox(height: 4),
             const Text(
@@ -121,11 +137,20 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
         if (active.isNotEmpty) ...[
           const Row(
             children: [
-              Icon(Icons.hourglass_empty, color: AromaColors.pendingOrange, size: 16),
+              Icon(
+                Icons.hourglass_empty,
+                color: AromaColors.pendingOrange,
+                size: 16,
+              ),
               SizedBox(width: 6),
               Text(
                 "ĐANG CHẾ BIẾN & CHỜ DUYỆT",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AromaColors.coffeePrimary, letterSpacing: 0.5),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                  color: AromaColors.coffeePrimary,
+                  letterSpacing: 0.5,
+                ),
               ),
             ],
           ),
@@ -145,11 +170,20 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
         if (history.isNotEmpty) ...[
           const Row(
             children: [
-              Icon(Icons.check_circle_outline, color: AromaColors.successGreen, size: 16),
+              Icon(
+                Icons.check_circle_outline,
+                color: AromaColors.successGreen,
+                size: 16,
+              ),
               SizedBox(width: 6),
               Text(
                 "LỊCH SỬ ĐÃ THANH TOÁN HOÀN TẤT",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AromaColors.coffeeTextSub, letterSpacing: 0.5),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                  color: AromaColors.coffeeTextSub,
+                  letterSpacing: 0.5,
+                ),
               ),
             ],
           ),
@@ -164,7 +198,7 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
               return _buildOrderCard(o);
             },
           ),
-        ]
+        ],
       ],
     );
   }
@@ -208,34 +242,52 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: AromaColors.coffeePrimary,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
                         order.tableLabel,
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 12),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Text(
                       "Mã: ${order.id}",
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AromaColors.coffeeTextDark),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        color: AromaColors.coffeeTextDark,
+                      ),
                     ),
                   ],
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: order.status.color.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     order.status.labelVi,
-                    style: TextStyle(fontWeight: FontWeight.bold, color: order.status.color, fontSize: 11),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: order.status.color,
+                      fontSize: 11,
+                    ),
                   ),
-                )
+                ),
               ],
             ),
             const Divider(height: 24),
@@ -249,12 +301,20 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
                   children: [
                     Text(
                       "${it.menuItem.emoji} ${it.menuItem.name}   x${it.quantity}",
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AromaColors.coffeeTextDark),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: AromaColors.coffeeTextDark,
+                      ),
                     ),
                     Text(
                       "\$${(it.menuItem.price * it.quantity).toStringAsFixed(2)}",
-                      style: const TextStyle(fontSize: 13, color: AromaColors.coffeePrimary, fontWeight: FontWeight.w600),
-                    )
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AromaColors.coffeePrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                 ),
               );
@@ -267,16 +327,26 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
                 decoration: BoxDecoration(
                   color: AromaColors.coffeeCardLightBg,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AromaColors.coffeeCardBorder.withOpacity(0.5)),
+                  border: Border.all(
+                    color: AromaColors.coffeeCardBorder.withOpacity(0.5),
+                  ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.notes, size: 14, color: AromaColors.coffeeTextSub),
+                    const Icon(
+                      Icons.notes,
+                      size: 14,
+                      color: AromaColors.coffeeTextSub,
+                    ),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         "Ghi chú: ${order.note}",
-                        style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: AromaColors.coffeeTextSub),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontStyle: FontStyle.italic,
+                          color: AromaColors.coffeeTextSub,
+                        ),
                       ),
                     ),
                   ],
@@ -291,11 +361,19 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
               children: [
                 const Text(
                   "TỔNG THANH TOÁN (HÓA ĐƠN + 10% THUẾ):",
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey),
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
+                  ),
                 ),
                 Text(
                   "\$${totalBill.toStringAsFixed(2)}",
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AromaColors.coffeePrimary),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    color: AromaColors.coffeePrimary,
+                  ),
                 ),
               ],
             ),
@@ -304,21 +382,28 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
             if (nextStatus != null) ...[
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: () => widget.onUpdateOrderStatus(order.id, nextStatus!),
+                onPressed: () =>
+                    widget.onUpdateOrderStatus(order.id, nextStatus!),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: order.status.color,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   minimumSize: const Size(double.infinity, 44),
                   elevation: 0,
                 ),
                 child: Text(
                   mainActionText,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.5),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    letterSpacing: 0.5,
+                  ),
                 ),
-              )
-            ]
+              ),
+            ],
           ],
         ),
       ),
@@ -337,19 +422,31 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
             children: [
               Text(
                 "TỔNG CỘNG: ${widget.menuItems.length} MÓN ĂN",
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AromaColors.coffeeTextSub),
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: AromaColors.coffeeTextSub,
+                ),
               ),
               ElevatedButton.icon(
                 onPressed: () => _showAddMenuItemDialog(context),
                 icon: const Icon(Icons.add, size: 14, color: Colors.white),
-                label: const Text("THÊM MÓN MỚI", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                label: const Text(
+                  "THÊM MÓN MỚI",
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AromaColors.coffeePrimary,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                 ),
-              )
+              ),
             ],
           ),
         ),
@@ -403,30 +500,49 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
                         child: Text(
                           item.name,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AromaColors.coffeeTextDark),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: AromaColors.coffeeTextDark,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: AromaColors.coffeeSecondary,
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           item.category,
-                          style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: AromaColors.coffeePrimary),
+                          style: const TextStyle(
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                            color: AromaColors.coffeePrimary,
+                          ),
                         ),
-                      )
+                      ),
                     ],
                   ),
                   Text(
                     item.vietnameseName,
-                    style: const TextStyle(fontSize: 12, color: AromaColors.coffeeTextSub, fontWeight: FontWeight.w500),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AromaColors.coffeeTextSub,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   Text(
                     "\$${item.price.toStringAsFixed(2)}",
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AromaColors.coffeePrimary),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: AromaColors.coffeePrimary,
+                    ),
                   ),
                 ],
               ),
@@ -445,17 +561,25 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
                 // Edit Dialog
                 IconButton(
                   onPressed: () => _showEditMenuItemDialog(context, item),
-                  icon: const Icon(Icons.edit, size: 18, color: AromaColors.coffeePrimary),
+                  icon: const Icon(
+                    Icons.edit,
+                    size: 18,
+                    color: AromaColors.coffeePrimary,
+                  ),
                   tooltip: "Sửa món",
                 ),
                 // Delete
                 IconButton(
                   onPressed: () => widget.onDeleteMenuItem(item.id),
-                  icon: const Icon(Icons.delete_outline, size: 18, color: Colors.redAccent),
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    size: 18,
+                    color: Colors.redAccent,
+                  ),
                   tooltip: "Xóa món",
                 ),
               ],
-            )
+            ),
           ],
         ),
       ),
@@ -477,30 +601,55 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
               title: const Text(
                 "Thêm Món Thực Đơn Mới",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AromaColors.coffeeTextDark),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: AromaColors.coffeeTextDark,
+                ),
               ),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildTextField(emojiController, "Emoji Biểu Tượng (Ví dụ 🥐)"),
+                    _buildTextField(
+                      emojiController,
+                      "Emoji Biểu Tượng (Ví dụ 🥐)",
+                    ),
                     const SizedBox(height: 10),
                     // Dropdown for Category selection
                     DropdownButtonFormField<String>(
                       value: category,
                       decoration: const InputDecoration(
                         labelText: "Phân mục ẩm thực",
-                        labelStyle: TextStyle(fontSize: 12, color: AromaColors.coffeePrimary, fontWeight: FontWeight.bold),
+                        labelStyle: TextStyle(
+                          fontSize: 12,
+                          color: AromaColors.coffeePrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
                         border: OutlineInputBorder(),
                       ),
                       items: const [
-                        DropdownMenuItem(value: "Coffees", child: Text("Cà phê ☕")),
-                        DropdownMenuItem(value: "Teas", child: Text("Trà hoa quả 🍵")),
-                        DropdownMenuItem(value: "Pastries", child: Text("Bánh ngọt 🥐")),
-                        DropdownMenuItem(value: "Brunch", child: Text("Điểm tâm 🥑")),
+                        DropdownMenuItem(
+                          value: "Coffees",
+                          child: Text("Cà phê ☕"),
+                        ),
+                        DropdownMenuItem(
+                          value: "Teas",
+                          child: Text("Trà hoa quả 🍵"),
+                        ),
+                        DropdownMenuItem(
+                          value: "Pastries",
+                          child: Text("Bánh ngọt 🥐"),
+                        ),
+                        DropdownMenuItem(
+                          value: "Brunch",
+                          child: Text("Điểm tâm 🥑"),
+                        ),
                       ],
                       onChanged: (val) {
                         if (val != null) {
@@ -511,39 +660,71 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
                       },
                     ),
                     const SizedBox(height: 10),
-                    _buildTextField(enNameController, "Tên tiếng Anh (Ví dụ Almond Croissant)"),
+                    _buildTextField(
+                      enNameController,
+                      "Tên tiếng Anh (Ví dụ Almond Croissant)",
+                    ),
                     const SizedBox(height: 10),
-                    _buildTextField(viNameController, "Tên tiếng Việt (Ví dụ Bánh Sừng Bò Hạnh Nhân)"),
+                    _buildTextField(
+                      viNameController,
+                      "Tên tiếng Việt (Ví dụ Bánh Sừng Bò Hạnh Nhân)",
+                    ),
                     const SizedBox(height: 10),
-                    _buildTextField(priceController, "Đơn giá USD (Ví dụ 5.50)", isNumber: true),
+                    _buildTextField(
+                      priceController,
+                      "Đơn giá USD (Ví dụ 5.50)",
+                      isNumber: true,
+                    ),
                     const SizedBox(height: 10),
-                    _buildTextField(descController, "Mô tả chất lượng món", maxLines: 2),
+                    _buildTextField(
+                      descController,
+                      "Mô tả chất lượng món",
+                      maxLines: 2,
+                    ),
                   ],
                 ),
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text("Hủy bỏ", style: TextStyle(color: Colors.grey)),
+                  child: const Text(
+                    "Hủy bỏ",
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ),
                 ElevatedButton(
                   onPressed: () {
                     final p = double.tryParse(priceController.text) ?? 1.0;
-                    final randSuffix = 100 + (DateTime.now().microsecondsSinceEpoch % 900);
+                    final randSuffix =
+                        100 + (DateTime.now().microsecondsSinceEpoch % 900);
                     final newItem = MenuItem(
                       id: "m${widget.menuItems.length + 1}-$randSuffix",
-                      name: enNameController.text.isNotEmpty ? enNameController.text : "New item",
-                      vietnameseName: viNameController.text.isNotEmpty ? viNameController.text : "Món mới",
+                      name: enNameController.text.isNotEmpty
+                          ? enNameController.text
+                          : "New item",
+                      vietnameseName: viNameController.text.isNotEmpty
+                          ? viNameController.text
+                          : "Món mới",
                       price: p,
                       description: descController.text,
-                      emoji: emojiController.text.isNotEmpty ? emojiController.text : "☕",
+                      emoji: emojiController.text.isNotEmpty
+                          ? emojiController.text
+                          : "☕",
                       category: category,
                     );
                     widget.onCreateMenuItem(newItem);
                     Navigator.pop(context);
                   },
-                  style: ElevatedButton.styleFrom(backgroundColor: AromaColors.coffeePrimary),
-                  child: const Text("Khởi tạo món", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AromaColors.coffeePrimary,
+                  ),
+                  child: const Text(
+                    "Khởi tạo món",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ],
             );
@@ -558,7 +739,9 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
     final emojiController = TextEditingController(text: item.emoji);
     final enNameController = TextEditingController(text: item.name);
     final viNameController = TextEditingController(text: item.vietnameseName);
-    final priceController = TextEditingController(text: item.price.toStringAsFixed(2));
+    final priceController = TextEditingController(
+      text: item.price.toStringAsFixed(2),
+    );
     final descController = TextEditingController(text: item.description);
     String category = item.category;
 
@@ -568,10 +751,16 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
               title: const Text(
                 "Sửa Thông Tin Món Ăn",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AromaColors.coffeeTextDark),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: AromaColors.coffeeTextDark,
+                ),
               ),
               content: SingleChildScrollView(
                 child: Column(
@@ -583,14 +772,30 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
                       value: category,
                       decoration: const InputDecoration(
                         labelText: "Phân mục ẩm thực",
-                        labelStyle: TextStyle(fontSize: 12, color: AromaColors.coffeePrimary, fontWeight: FontWeight.bold),
+                        labelStyle: TextStyle(
+                          fontSize: 12,
+                          color: AromaColors.coffeePrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
                         border: OutlineInputBorder(),
                       ),
                       items: const [
-                        DropdownMenuItem(value: "Coffees", child: Text("Cà phê ☕")),
-                        DropdownMenuItem(value: "Teas", child: Text("Trà hoa quả 🍵")),
-                        DropdownMenuItem(value: "Pastries", child: Text("Bánh ngọt 🥐")),
-                        DropdownMenuItem(value: "Brunch", child: Text("Điểm tâm 🥑")),
+                        DropdownMenuItem(
+                          value: "Coffees",
+                          child: Text("Cà phê ☕"),
+                        ),
+                        DropdownMenuItem(
+                          value: "Teas",
+                          child: Text("Trà hoa quả 🍵"),
+                        ),
+                        DropdownMenuItem(
+                          value: "Pastries",
+                          child: Text("Bánh ngọt 🥐"),
+                        ),
+                        DropdownMenuItem(
+                          value: "Brunch",
+                          child: Text("Điểm tâm 🥑"),
+                        ),
                       ],
                       onChanged: (val) {
                         if (val != null) {
@@ -605,20 +810,32 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
                     const SizedBox(height: 10),
                     _buildTextField(viNameController, "Tên tiếng Việt"),
                     const SizedBox(height: 10),
-                    _buildTextField(priceController, "Đơn giá USD", isNumber: true),
+                    _buildTextField(
+                      priceController,
+                      "Đơn giá USD",
+                      isNumber: true,
+                    ),
                     const SizedBox(height: 10),
-                    _buildTextField(descController, "Mô tả chất lượng món", maxLines: 2),
+                    _buildTextField(
+                      descController,
+                      "Mô tả chất lượng món",
+                      maxLines: 2,
+                    ),
                   ],
                 ),
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text("Hủy bỏ", style: TextStyle(color: Colors.grey)),
+                  child: const Text(
+                    "Hủy bỏ",
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    final p = double.tryParse(priceController.text) ?? item.price;
+                    final p =
+                        double.tryParse(priceController.text) ?? item.price;
                     final updated = item.copyWith(
                       name: enNameController.text,
                       vietnameseName: viNameController.text,
@@ -630,8 +847,16 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
                     widget.onUpdateMenuItem(updated);
                     Navigator.pop(context);
                   },
-                  style: ElevatedButton.styleFrom(backgroundColor: AromaColors.coffeePrimary),
-                  child: const Text("Lưu thay đổi", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AromaColors.coffeePrimary,
+                  ),
+                  child: const Text(
+                    "Lưu thay đổi",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ],
             );
@@ -641,17 +866,30 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
     );
   }
 
-  Widget _buildTextField(TextEditingController ctrl, String hint, {bool isNumber = false, int maxLines = 1}) {
+  Widget _buildTextField(
+    TextEditingController ctrl,
+    String hint, {
+    bool isNumber = false,
+    int maxLines = 1,
+  }) {
     return TextField(
       controller: ctrl,
-      keyboardType: isNumber ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
+      keyboardType: isNumber
+          ? const TextInputType.numberWithOptions(decimal: true)
+          : TextInputType.text,
       maxLines: maxLines,
       style: const TextStyle(fontSize: 13, color: AromaColors.coffeeTextDark),
       decoration: InputDecoration(
         labelText: hint,
-        labelStyle: const TextStyle(fontSize: 12, color: AromaColors.coffeeTextSub),
+        labelStyle: const TextStyle(
+          fontSize: 12,
+          color: AromaColors.coffeeTextSub,
+        ),
         border: const OutlineInputBorder(),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 10,
+        ),
       ),
     );
   }
@@ -660,23 +898,29 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
 // Inline helper extension for generating integer randomness
 extension on int {
   int random() {
-    return (this == 0) ? 0 : (0 + (DateTime.now().microsecondsSinceEpoch % (this + 1)));
+    return (this == 0)
+        ? 0
+        : (0 + (DateTime.now().microsecondsSinceEpoch % (this + 1)));
   }
 }
+
 extension on RangeValues {
   // simple math replacement for .random inside bounds
 }
+
 class NumRange {
   static int random(int min, int max) {
     final offset = max - min + 1;
-    return min + offset.random();
+    return min + offset.randomValue();
   }
 }
+
 extension RangeHelper on int {
-  int random() {
+  int randomValue() {
     return (this == 0) ? 0 : (DateTime.now().microsecondsSinceEpoch % this);
   }
 }
+
 extension RandomRange on int {
   // safe helper to handle custom random within a range
 }
