@@ -6,7 +6,6 @@ class CustomerScreen extends StatefulWidget {
   final Map<String, int> cart;
   final Function(MenuItem) onAddCart;
   final Function(MenuItem) onRemoveCart;
-  final VoidCallback onOpenQrScanner;
   final VoidCallback onBackToGateway;
   final String selectedTableId;
   final String selectedTableLabel;
@@ -20,7 +19,6 @@ class CustomerScreen extends StatefulWidget {
     required this.cart,
     required this.onAddCart,
     required this.onRemoveCart,
-    required this.onOpenQrScanner,
     required this.onBackToGateway,
     required this.selectedTableId,
     required this.selectedTableLabel,
@@ -80,9 +78,9 @@ class _CustomerScreenState extends State<CustomerScreen> {
           _activeCategory == "All" || item.category == _activeCategory;
       final matchesSearch =
           item.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          item.vietnameseName.toLowerCase().contains(
-            _searchQuery.toLowerCase(),
-          );
+              item.vietnameseName.toLowerCase().contains(
+                    _searchQuery.toLowerCase(),
+                  );
       return matchesCategory && matchesSearch;
     }).toList();
 
@@ -169,19 +167,6 @@ class _CustomerScreenState extends State<CustomerScreen> {
                   // Actions
                   Row(
                     children: [
-                      IconButton(
-                        onPressed: widget.onOpenQrScanner,
-                        icon: const Icon(
-                          Icons.qr_code_scanner,
-                          size: 18,
-                          color: AromaColors.coffeePrimary,
-                        ),
-                        style: IconButton.styleFrom(
-                          backgroundColor: AromaColors.coffeeSecondary,
-                          minimumSize: const Size(42, 42),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
                       ElevatedButton.icon(
                         onPressed: widget.onBackToGateway,
                         icon: const Icon(
@@ -555,8 +540,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
     double total,
   ) {
     final showCart = totalItems > 0;
-    final showTracker =
-        widget.activeOrder != null &&
+    final showTracker = widget.activeOrder != null &&
         widget.activeOrder!.status != OrderStatus.paid;
 
     if (!showCart && !showTracker) return null;

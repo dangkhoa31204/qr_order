@@ -1,26 +1,37 @@
 import 'package:flutter/material.dart';
 import '../constants.dart';
 import '../models/item_model.dart';
+import 'table_management_screen.dart';
 
 class StaffScreen extends StatefulWidget {
   final List<OrderModel> orders;
   final List<MenuItem> menuItems;
+  final List<TableModel> tables;
   final Function(String, OrderStatus) onUpdateOrderStatus;
   final Function(String) onToggleAvailability;
   final Function(MenuItem) onCreateMenuItem;
   final Function(MenuItem) onUpdateMenuItem;
   final Function(String) onDeleteMenuItem;
+  final Function(TableModel) onAddTable;
+  final Function(TableModel) onUpdateTable;
+  final Function(String) onDeleteTable;
+  final Function(TableModel) onExportQrCode;
   final VoidCallback onBackToGateway;
 
   const StaffScreen({
     super.key,
     required this.orders,
     required this.menuItems,
+    required this.tables,
     required this.onUpdateOrderStatus,
     required this.onToggleAvailability,
     required this.onCreateMenuItem,
     required this.onUpdateMenuItem,
     required this.onDeleteMenuItem,
+    required this.onAddTable,
+    required this.onUpdateTable,
+    required this.onDeleteTable,
+    required this.onExportQrCode,
     required this.onBackToGateway,
   });
 
@@ -35,7 +46,7 @@ class _StaffScreenState extends State<StaffScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -47,12 +58,10 @@ class _StaffScreenState extends State<StaffScreen>
   @override
   Widget build(BuildContext context) {
     // Separate active order vs historic/paid orders
-    final activeOrders = widget.orders
-        .where((o) => o.status != OrderStatus.paid)
-        .toList();
-    final historicOrders = widget.orders
-        .where((o) => o.status == OrderStatus.paid)
-        .toList();
+    final activeOrders =
+        widget.orders.where((o) => o.status != OrderStatus.paid).toList();
+    final historicOrders =
+        widget.orders.where((o) => o.status == OrderStatus.paid).toList();
 
     return Scaffold(
       backgroundColor: AromaColors.coffeeBackground,
@@ -84,6 +93,7 @@ class _StaffScreenState extends State<StaffScreen>
           tabs: const [
             Tab(icon: Icon(Icons.receipt_long), text: "ĐƠN ORDER ĐỂ NẤU"),
             Tab(icon: Icon(Icons.restaurant_menu), text: "QUẢN LÝ MENU"),
+            Tab(icon: Icon(Icons.table_restaurant), text: "QUẢN LÝ BÀN"),
           ],
         ),
       ),
@@ -92,6 +102,13 @@ class _StaffScreenState extends State<StaffScreen>
         children: [
           _buildOrdersTab(activeOrders, historicOrders),
           _buildMenuTab(),
+          TableManagementScreen(
+            tables: widget.tables,
+            onAddTable: widget.onAddTable,
+            onUpdateTable: widget.onUpdateTable,
+            onDeleteTable: widget.onDeleteTable,
+            onExportQrCode: widget.onExportQrCode,
+          ),
         ],
       ),
     );

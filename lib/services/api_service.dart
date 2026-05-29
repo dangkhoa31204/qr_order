@@ -190,6 +190,8 @@ class ApiService {
   }
 
   // 3. TABLE API CALLS
+  static final List<TableModel> _mockTables = List.from(systemTables);
+
   static Future<List<TableModel>> fetchTables() async {
     final result = await _safeGet("/api/tables");
     if (result["success"] == true) {
@@ -199,7 +201,57 @@ class ApiService {
       print(
         "ApiService.fetchTables failed: ${result["error"]}. Utilizing mock fallback.",
       );
-      return systemTables;
+      return _mockTables;
+    }
+  }
+
+  static Future<bool> createTable(TableModel table) async {
+    _mockTables.add(table);
+
+    try {
+      final response = await http
+          .post(
+            Uri.parse("$baseUrl/api/tables"),
+            headers: {"Content-Type": "application/json"},
+            body: jsonEncode(table.toJson()),
+          )
+          .timeout(const Duration(seconds: 3));
+      return response.statusCode >= 200 && response.statusCode < 300;
+    } catch (_) {
+      return useMockFallback;
+    }
+  }
+
+  static Future<bool> updateTable(TableModel table) async {
+    final idx = _mockTables.indexWhere((t) => t.id == table.id);
+    if (idx != -1) {
+      _mockTables[idx] = table;
+    }
+
+    try {
+      final response = await http
+          .put(
+            Uri.parse("$baseUrl/api/tables/${table.id}"),
+            headers: {"Content-Type": "application/json"},
+            body: jsonEncode(table.toJson()),
+          )
+          .timeout(const Duration(seconds: 3));
+      return response.statusCode >= 200 && response.statusCode < 300;
+    } catch (_) {
+      return useMockFallback;
+    }
+  }
+
+  static Future<bool> deleteTable(String tableId) async {
+    _mockTables.removeWhere((t) => t.id == tableId);
+
+    try {
+      final response = await http
+          .delete(Uri.parse("$baseUrl/api/tables/$tableId"))
+          .timeout(const Duration(seconds: 3));
+      return response.statusCode >= 200 && response.statusCode < 300;
+    } catch (_) {
+      return useMockFallback;
     }
   }
 }

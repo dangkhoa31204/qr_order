@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'constants.dart';
 import 'models/item_model.dart';
 import 'services/api_service.dart';
+import 'screens/login_screen.dart';
 import 'screens/role_selection_screen.dart';
 import 'screens/customer_screen.dart';
 import 'screens/staff_screen.dart';
-import 'widgets/mock_qr_dialog.dart';
 
 void main() {
   runApp(const AromaBistroApp());
@@ -44,6 +44,9 @@ class MainGateScreen extends StatefulWidget {
 }
 
 class _MainGateScreenState extends State<MainGateScreen> {
+  // Authentication state
+  bool _isLoggedIn = false;
+
   // App dynamic states
   UserRole _currentRole = UserRole.undecided;
   String _selectedTableId = "08";
@@ -51,6 +54,7 @@ class _MainGateScreenState extends State<MainGateScreen> {
 
   List<MenuItem> _menuItems = [];
   List<OrderModel> _orderQueue = [];
+  List<TableModel> _tables = [];
   OrderModel? _activeCustomerOrder;
 
   // Local cart cache: MenuItemID -> Quantity
@@ -83,10 +87,12 @@ class _MainGateScreenState extends State<MainGateScreen> {
     try {
       final menu = await ApiService.fetchMenuItems();
       final orders = await ApiService.fetchOrderQueue();
+      final tables = await ApiService.fetchTables();
 
       setState(() {
         _menuItems = menu;
         _orderQueue = orders;
+        _tables = tables;
 
         // Auto-match active customer order
         _syncActiveCustomerOrder();
@@ -124,7 +130,10 @@ class _MainGateScreenState extends State<MainGateScreen> {
       }
     } else {
       // Look for any pending/preparing/ready order belonging to the current selected table
-      final tableActiveOrders = _orderQueue.where((o) => o.tableId == _selectedTableId && o.status != OrderStatus.paid).toList();
+      final tableActiveOrders = _orderQueue
+          .where((o) =>
+              o.tableId == _selectedTableId && o.status != OrderStatus.paid)
+          .toList();
       if (tableActiveOrders.isNotEmpty) {
         // use latest
         _activeCustomerOrder = tableActiveOrders.last;
@@ -155,8 +164,10 @@ class _MainGateScreenState extends State<MainGateScreen> {
   }
 
   // Checkout submission
-  Future<void> _submitCustomerOrder(String tableId, List<CartItem> items, String note) async {
-    final orderId = "B$tableId-${1000 + (DateTime.now().microsecondsSinceEpoch % 9000)}";
+  Future<void> _submitCustomerOrder(
+      String tableId, List<CartItem> items, String note) async {
+    final orderId =
+        "B$tableId-${1000 + (DateTime.now().microsecondsSinceEpoch % 9000)}";
     final customOrderObj = OrderModel(
       id: orderId,
       tableId: tableId,
@@ -185,7 +196,8 @@ class _MainGateScreenState extends State<MainGateScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("❌ Không thể kết nối đến máy chủ. Đang sử dụng chế độ cục bộ mô phỏng."),
+          content: Text(
+              "❌ Không thể kết nối đến máy chủ. Đang sử dụng chế độ cục bộ mô phỏng."),
           backgroundColor: AromaColors.pendingOrange,
         ),
       );
@@ -249,6 +261,46 @@ class _MainGateScreenState extends State<MainGateScreen> {
     }
   }
 
+  // Table Management Functions
+  Future<void> _addTable(TableModel table) async {
+    final success = await ApiService.createTable(table);
+    if (success) {
+      _loadBackendData();
+    }
+  }
+
+  Future<void> _updateTable(TableModel table) async {
+    final success = await ApiService.updateTable(table);
+    if (success) {
+      _loadBackendData();
+    }
+  }
+
+  Future<void> _deleteTable(String tableId) async {
+    final success = await ApiService.deleteTable(tableId);
+    if (success) {
+      _loadBackendData();
+    }
+  }
+
+  void _exportQrCode(TableModel table) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("✅ Mã QR của ${table.label} đã được lưu!"),
+        backgroundColor: AromaColors.successGreen,
+      ),
+    );
+  }
+
+  void _handleLogin(UserRole role) {
+    setState(() {
+      _isLoggedIn = true;
+      _currentRole = role;
+      _syncActiveCustomerOrder();
+    });
+    _loadBackendData();
+  }
+
   // --- POPUPS & API OPTION DIALOG ---
   void _showConfigureApiDialog() {
     final controller = TextEditingController(text: ApiService.baseUrl);
@@ -256,7 +308,8 @@ class _MainGateScreenState extends State<MainGateScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Text(
             "Cấu hình C# API Server",
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -267,7 +320,8 @@ class _MainGateScreenState extends State<MainGateScreen> {
             children: [
               const Text(
                 "Nhập địa chỉ máy chủ ASP.NET Core API cục bộ của bạn để đồng bộ dữ liệu thật:",
-                style: TextStyle(fontSize: 12, color: AromaColors.coffeeTextSub),
+                style:
+                    TextStyle(fontSize: 12, color: AromaColors.coffeeTextSub),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -277,12 +331,16 @@ class _MainGateScreenState extends State<MainGateScreen> {
                   border: OutlineInputBorder(),
                   contentPadding: EdgeInsets.symmetric(horizontal: 12),
                 ),
-                style: const TextStyle(fontSize: 13, color: AromaColors.coffeeTextDark),
+                style: const TextStyle(
+                    fontSize: 13, color: AromaColors.coffeeTextDark),
               ),
               const SizedBox(height: 12),
               const Text(
                 "Gợi ý kết nối:\n• localhost PC: http://10.0.2.2:5000\n• Lan IP: http://192.168.1.XX:5000\n• Web live service: URL công khai của bạn",
-                style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: Colors.blueGrey),
+                style: TextStyle(
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic,
+                    color: Colors.blueGrey),
               )
             ],
           ),
@@ -300,42 +358,19 @@ class _MainGateScreenState extends State<MainGateScreen> {
                 _loadBackendData();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text("Kính chào! Đã chuyển hướng máy chủ sang: ${ApiService.baseUrl}"),
+                    content: Text(
+                        "Kính chào! Đã chuyển hướng máy chủ sang: ${ApiService.baseUrl}"),
                     backgroundColor: AromaColors.coffeePrimary,
                   ),
                 );
               },
-              style: ElevatedButton.styleFrom(backgroundColor: AromaColors.coffeePrimary),
-              child: const Text("Lưu Kết Nối", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AromaColors.coffeePrimary),
+              child: const Text("Lưu Kết Nối",
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold)),
             )
           ],
-        );
-      },
-    );
-  }
-
-  void _showQrScannerSimulator() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return MockQrScannerDialog(
-          onClose: () => Navigator.pop(context),
-          onScanned: (tableId, tableLabel) {
-            setState(() {
-              _selectedTableId = tableId;
-              _selectedTableLabel = tableLabel;
-              // Clean customer cart when moving table
-              _cart.clear();
-              _syncActiveCustomerOrder();
-            });
-            Navigator.pop(context);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text("📷 Quét thành công! Đã đăng kí thực đơn tại: $tableLabel"),
-                backgroundColor: AromaColors.successGreen,
-              ),
-            );
-          },
         );
       },
     );
@@ -344,6 +379,13 @@ class _MainGateScreenState extends State<MainGateScreen> {
   // --- SCREEN RENDERING CONTROLLER ---
   @override
   Widget build(BuildContext context) {
+    // Show login if not logged in
+    if (!_isLoggedIn) {
+      return LoginScreen(
+        onLoginSuccess: _handleLogin,
+      );
+    }
+
     switch (_currentRole) {
       case UserRole.undecided:
         return RoleSelectionScreen(
@@ -361,7 +403,6 @@ class _MainGateScreenState extends State<MainGateScreen> {
           cart: _cart,
           onAddCart: _addCartItem,
           onRemoveCart: _removeCartItem,
-          onOpenQrScanner: _showQrScannerSimulator,
           onBackToGateway: () {
             setState(() {
               _currentRole = UserRole.undecided;
@@ -379,11 +420,16 @@ class _MainGateScreenState extends State<MainGateScreen> {
         return StaffScreen(
           orders: _orderQueue,
           menuItems: _menuItems,
+          tables: _tables,
           onUpdateOrderStatus: _updateOrderStatus,
           onToggleAvailability: _toggleAvailability,
           onCreateMenuItem: _createMenuItem,
           onUpdateMenuItem: _updateMenuItem,
           onDeleteMenuItem: _deleteMenuItem,
+          onAddTable: _addTable,
+          onUpdateTable: _updateTable,
+          onDeleteTable: _deleteTable,
+          onExportQrCode: _exportQrCode,
           onBackToGateway: () {
             setState(() {
               _currentRole = UserRole.undecided;
