@@ -170,12 +170,12 @@ class _CustomerScreenState extends State<CustomerScreen> {
                       ElevatedButton.icon(
                         onPressed: widget.onBackToGateway,
                         icon: const Icon(
-                          Icons.swap_horiz,
+                          Icons.refresh,
                           size: 16,
                           color: Colors.white,
                         ),
                         label: const Text(
-                          "Đổi Vai",
+                          "Làm Mới",
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,

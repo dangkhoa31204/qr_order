@@ -49,8 +49,6 @@ class _LoginScreenState extends State<LoginScreen> {
       // Mock authentication - in real app, call API
       if (username == "staff" && password == "12345") {
         widget.onLoginSuccess(UserRole.staff);
-      } else if (username == "customer" && password == "12345") {
-        widget.onLoginSuccess(UserRole.customer);
       } else {
         setState(() {
           _errorMessage = "Tên đăng nhập hoặc mật khẩu không chính xác";
@@ -242,7 +240,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: Text(
-                    "Demo: staff/12345 hoặc customer/12345",
+                    "Demo: staff/12345",
                     style: TextStyle(
                       fontSize: 11,
                       color: AromaColors.coffeeTextSub.withOpacity(0.7),

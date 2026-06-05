@@ -4,10 +4,7 @@ import 'constants.dart';
 import 'models/item_model.dart';
 import 'services/api_service.dart';
 import 'screens/login_screen.dart';
-import 'screens/role_selection_screen.dart';
-import 'screens/customer_screen.dart';
 import 'screens/staff_screen.dart';
-
 void main() {
   runApp(const AromaBistroApp());
 }
@@ -44,21 +41,11 @@ class MainGateScreen extends StatefulWidget {
 }
 
 class _MainGateScreenState extends State<MainGateScreen> {
-  // Authentication state
   bool _isLoggedIn = false;
-
-  // App dynamic states
-  UserRole _currentRole = UserRole.undecided;
-  String _selectedTableId = "08";
-  String _selectedTableLabel = "Bàn #08";
 
   List<MenuItem> _menuItems = [];
   List<OrderModel> _orderQueue = [];
   List<TableModel> _tables = [];
-  OrderModel? _activeCustomerOrder;
-
-  // Local cart cache: MenuItemID -> Quantity
-  final Map<String, int> _cart = {};
 
   bool _isLoading = false;
   Timer? _syncTimer;
@@ -93,9 +80,6 @@ class _MainGateScreenState extends State<MainGateScreen> {
         _menuItems = menu;
         _orderQueue = orders;
         _tables = tables;
-
-        // Auto-match active customer order
-        _syncActiveCustomerOrder();
       });
     } catch (e) {
       print("Error loading backend data: $e");
@@ -111,115 +95,12 @@ class _MainGateScreenState extends State<MainGateScreen> {
       if (mounted) {
         setState(() {
           _orderQueue = orders;
-          _syncActiveCustomerOrder();
         });
       }
     } catch (_) {}
   }
 
-  void _syncActiveCustomerOrder() {
-    if (_activeCustomerOrder != null) {
-      final updated = _orderQueue.firstWhere(
-        (o) => o.id == _activeCustomerOrder!.id,
-        orElse: () => _activeCustomerOrder!,
-      );
-      if (updated.status == OrderStatus.paid) {
-        _activeCustomerOrder = null; // cleared when paid
-      } else {
-        _activeCustomerOrder = updated;
-      }
-    } else {
-      // Look for any pending/preparing/ready order belonging to the current selected table
-      final tableActiveOrders = _orderQueue
-          .where((o) =>
-              o.tableId == _selectedTableId && o.status != OrderStatus.paid)
-          .toList();
-      if (tableActiveOrders.isNotEmpty) {
-        // use latest
-        _activeCustomerOrder = tableActiveOrders.last;
-      }
-    }
-  }
-
   // --- ACTIONS ---
-
-  // Add cart item
-  void _addCartItem(MenuItem item) {
-    setState(() {
-      final count = _cart[item.id] ?? 0;
-      _cart[item.id] = count + 1;
-    });
-  }
-
-  // Remove cart item
-  void _removeCartItem(MenuItem item) {
-    setState(() {
-      final count = _cart[item.id] ?? 0;
-      if (count > 1) {
-        _cart[item.id] = count - 1;
-      } else {
-        _cart.remove(item.id);
-      }
-    });
-  }
-
-  // Checkout submission
-  Future<void> _submitCustomerOrder(
-      String tableId, List<CartItem> items, String note) async {
-    final orderId =
-        "B$tableId-${1000 + (DateTime.now().microsecondsSinceEpoch % 9000)}";
-    final customOrderObj = OrderModel(
-      id: orderId,
-      tableId: tableId,
-      items: items,
-      status: OrderStatus.pending,
-      timeMinutes: 5 + (DateTime.now().microsecondsSinceEpoch % 15),
-      timestamp: "Vừa xong",
-      note: note,
-      tableLabel: _selectedTableLabel,
-    );
-
-    setState(() => _isLoading = true);
-    final success = await ApiService.submitOrder(customOrderObj);
-    if (success) {
-      setState(() {
-        _cart.clear();
-        _activeCustomerOrder = customOrderObj;
-        _orderQueue.add(customOrderObj);
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("🎉 Đã gửi đơn hàng thành công đến Bếp Co-working!"),
-          backgroundColor: AromaColors.successGreen,
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-              "❌ Không thể kết nối đến máy chủ. Đang sử dụng chế độ cục bộ mô phỏng."),
-          backgroundColor: AromaColors.pendingOrange,
-        ),
-      );
-    }
-    setState(() => _isLoading = false);
-  }
-
-  // Cancel order in pending state
-  Future<void> _cancelCustomerOrder() async {
-    if (_activeCustomerOrder == null) return;
-    final id = _activeCustomerOrder!.id;
-    setState(() {
-      _orderQueue.removeWhere((o) => o.id == id);
-      _activeCustomerOrder = null;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("🛑 Đã hủy đơn hàng thành công."),
-        backgroundColor: Colors.redAccent,
-      ),
-    );
-  }
 
   // Kitchen Status advanced progression
   Future<void> _updateOrderStatus(String orderId, OrderStatus status) async {
@@ -295,8 +176,6 @@ class _MainGateScreenState extends State<MainGateScreen> {
   void _handleLogin(UserRole role) {
     setState(() {
       _isLoggedIn = true;
-      _currentRole = role;
-      _syncActiveCustomerOrder();
     });
     _loadBackendData();
   }
@@ -386,56 +265,25 @@ class _MainGateScreenState extends State<MainGateScreen> {
       );
     }
 
-    switch (_currentRole) {
-      case UserRole.undecided:
-        return RoleSelectionScreen(
-          onRoleSelected: (role) {
-            setState(() {
-              _currentRole = role;
-              _syncActiveCustomerOrder();
-            });
-          },
-          onConfigureApi: _showConfigureApiDialog,
-        );
-
-      case UserRole.customer:
-        return CustomerScreen(
-          cart: _cart,
-          onAddCart: _addCartItem,
-          onRemoveCart: _removeCartItem,
-          onBackToGateway: () {
-            setState(() {
-              _currentRole = UserRole.undecided;
-            });
-          },
-          selectedTableId: _selectedTableId,
-          selectedTableLabel: _selectedTableLabel,
-          menuItems: _menuItems,
-          activeOrder: _activeCustomerOrder,
-          onSubmitOrder: _submitCustomerOrder,
-          onCancelActiveOrder: _cancelCustomerOrder,
-        );
-
-      case UserRole.staff:
-        return StaffScreen(
-          orders: _orderQueue,
-          menuItems: _menuItems,
-          tables: _tables,
-          onUpdateOrderStatus: _updateOrderStatus,
-          onToggleAvailability: _toggleAvailability,
-          onCreateMenuItem: _createMenuItem,
-          onUpdateMenuItem: _updateMenuItem,
-          onDeleteMenuItem: _deleteMenuItem,
-          onAddTable: _addTable,
-          onUpdateTable: _updateTable,
-          onDeleteTable: _deleteTable,
-          onExportQrCode: _exportQrCode,
-          onBackToGateway: () {
-            setState(() {
-              _currentRole = UserRole.undecided;
-            });
-          },
-        );
-    }
+    // Show StaffScreen if logged in
+    return StaffScreen(
+      orders: _orderQueue,
+      menuItems: _menuItems,
+      tables: _tables,
+      onUpdateOrderStatus: _updateOrderStatus,
+      onToggleAvailability: _toggleAvailability,
+      onCreateMenuItem: _createMenuItem,
+      onUpdateMenuItem: _updateMenuItem,
+      onDeleteMenuItem: _deleteMenuItem,
+      onAddTable: _addTable,
+      onUpdateTable: _updateTable,
+      onDeleteTable: _deleteTable,
+      onExportQrCode: _exportQrCode,
+      onBackToGateway: () {
+        setState(() {
+          _isLoggedIn = false;
+        });
+      },
+    );
   }
 }
