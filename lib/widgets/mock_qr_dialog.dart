@@ -4,7 +4,7 @@ import '../models/item_model.dart';
 
 class MockQrScannerDialog extends StatelessWidget {
   final VoidCallback onClose;
-  final Function(String tableId, String tableLabel) onScanned;
+  final Function(int tableId, String tableLabel) onScanned;
 
   const MockQrScannerDialog({
     super.key,
@@ -120,7 +120,7 @@ class MockQrScannerDialog extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final t = systemTables[index];
                     return InkWell(
-                      onTap: () => onScanned(t.id, t.label),
+                      onTap: () => onScanned(t.tableId, t.label),
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
@@ -161,7 +161,7 @@ class MockQrScannerDialog extends StatelessWidget {
                                     ),
                                   ),
                                   Text(
-                                    t.description,
+                                    "Sức chứa: ${t.capacity} người - ${t.status.label}",
                                     style: const TextStyle(
                                       fontSize: 11,
                                       color: AromaColors.coffeeTextSub,

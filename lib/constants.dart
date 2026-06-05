@@ -15,8 +15,10 @@ class AromaColors {
   static const Color pendingOrange = Color(0xFFEF8C2E);
 }
 
+/// Role khớp DB: 1 = Admin, 2 = Staff
+/// Customer không nằm trong bảng Accounts, đây là luồng riêng qua QR scan
 enum UserRole {
-  undecided,
-  customer,
+  admin,
   staff,
+  customer, // Chỉ dùng cho luồng customer QR, không lưu DB
 }

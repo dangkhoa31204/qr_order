@@ -2,9 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'constants.dart';
 import 'models/item_model.dart';
+import 'models/account_model.dart';
 import 'services/api_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/staff_screen.dart';
+
 void main() {
   runApp(const AromaBistroApp());
 }
@@ -42,6 +44,7 @@ class MainGateScreen extends StatefulWidget {
 
 class _MainGateScreenState extends State<MainGateScreen> {
   bool _isLoggedIn = false;
+  AccountModel? _currentUser;
 
   List<MenuItem> _menuItems = [];
   List<OrderModel> _orderQueue = [];
@@ -103,7 +106,7 @@ class _MainGateScreenState extends State<MainGateScreen> {
   // --- ACTIONS ---
 
   // Kitchen Status advanced progression
-  Future<void> _updateOrderStatus(String orderId, OrderStatus status) async {
+  Future<void> _updateOrderStatus(int orderId, OrderStatus status) async {
     final success = await ApiService.updateOrderStatus(orderId, status);
     if (success) {
       _loadBackendData();
@@ -111,7 +114,7 @@ class _MainGateScreenState extends State<MainGateScreen> {
   }
 
   // Modify item availability
-  Future<void> _toggleAvailability(String itemId) async {
+  Future<void> _toggleAvailability(int itemId) async {
     final success = await ApiService.toggleMenuItemAvailability(itemId);
     if (success) {
       _loadBackendData();
@@ -135,7 +138,7 @@ class _MainGateScreenState extends State<MainGateScreen> {
   }
 
   // Delete item
-  Future<void> _deleteMenuItem(String id) async {
+  Future<void> _deleteMenuItem(int id) async {
     final success = await ApiService.deleteMenuItem(id);
     if (success) {
       _loadBackendData();
@@ -157,7 +160,7 @@ class _MainGateScreenState extends State<MainGateScreen> {
     }
   }
 
-  Future<void> _deleteTable(String tableId) async {
+  Future<void> _deleteTable(int tableId) async {
     final success = await ApiService.deleteTable(tableId);
     if (success) {
       _loadBackendData();
@@ -173,9 +176,10 @@ class _MainGateScreenState extends State<MainGateScreen> {
     );
   }
 
-  void _handleLogin(UserRole role) {
+  void _handleLogin(AccountModel account) {
     setState(() {
       _isLoggedIn = true;
+      _currentUser = account;
     });
     _loadBackendData();
   }
@@ -282,6 +286,7 @@ class _MainGateScreenState extends State<MainGateScreen> {
       onBackToGateway: () {
         setState(() {
           _isLoggedIn = false;
+          _currentUser = null;
         });
       },
     );

@@ -1,11 +1,80 @@
 import 'package:flutter/material.dart';
 import '../constants.dart';
 
+/*==================================================
+  CATEGORY ENUM — khớp MenuItems.Category (INT)
+  1 = Coffee, 2 = Tea, 3 = Cake, 4 = Juice, 99 = Other
+==================================================*/
+enum CategoryType {
+  coffee(1, 'Cà phê', '☕'),
+  tea(2, 'Trà', '🍵'),
+  cake(3, 'Bánh ngọt', '🍰'),
+  juice(4, 'Nước ép', '🧃'),
+  other(99, 'Khác', '🍽️');
+
+  final int value;
+  final String label;
+  final String icon;
+  const CategoryType(this.value, this.label, this.icon);
+
+  static CategoryType fromInt(int v) {
+    switch (v) {
+      case 1:
+        return CategoryType.coffee;
+      case 2:
+        return CategoryType.tea;
+      case 3:
+        return CategoryType.cake;
+      case 4:
+        return CategoryType.juice;
+      case 99:
+      default:
+        return CategoryType.other;
+    }
+  }
+}
+
+/*==================================================
+  TABLE STATUS ENUM — khớp Tables.Status (INT)
+  1 = Available, 2 = Occupied, 3 = Maintenance
+==================================================*/
+enum TableStatus {
+  available(1, 'Trống', Colors.green),
+  occupied(2, 'Đang sử dụng', Colors.orange),
+  maintenance(3, 'Bảo trì', Colors.grey);
+
+  final int value;
+  final String label;
+  final Color color;
+  const TableStatus(this.value, this.label, this.color);
+
+  static TableStatus fromInt(int v) {
+    switch (v) {
+      case 1:
+        return TableStatus.available;
+      case 2:
+        return TableStatus.occupied;
+      case 3:
+        return TableStatus.maintenance;
+      default:
+        return TableStatus.available;
+    }
+  }
+}
+
+/*==================================================
+  ORDER STATUS ENUM — khớp Orders.Status (INT)
+  1 = Pending, 2 = Preparing, 3 = Ready, 4 = Paid, 5 = Cancelled
+==================================================*/
 enum OrderStatus {
-  pending,
-  preparing,
-  ready,
-  paid;
+  pending(1),
+  preparing(2),
+  ready(3),
+  paid(4),
+  cancelled(5);
+
+  final int value;
+  const OrderStatus(this.value);
 
   Color get color {
     switch (this) {
@@ -17,6 +86,8 @@ enum OrderStatus {
         return AromaColors.successGreen;
       case OrderStatus.paid:
         return AromaColors.coffeeTextSub;
+      case OrderStatus.cancelled:
+        return Colors.redAccent;
     }
   }
 
@@ -30,22 +101,44 @@ enum OrderStatus {
         return "Hoàn thành món";
       case OrderStatus.paid:
         return "Đã thanh toán";
+      case OrderStatus.cancelled:
+        return "Đã hủy";
+    }
+  }
+
+  static OrderStatus fromInt(int v) {
+    switch (v) {
+      case 1:
+        return OrderStatus.pending;
+      case 2:
+        return OrderStatus.preparing;
+      case 3:
+        return OrderStatus.ready;
+      case 4:
+        return OrderStatus.paid;
+      case 5:
+        return OrderStatus.cancelled;
+      default:
+        return OrderStatus.pending;
     }
   }
 
   static OrderStatus fromString(String text) {
     switch (text.toLowerCase()) {
       case 'preparing':
-      case '1':
+      case '2':
         return OrderStatus.preparing;
       case 'ready':
-      case '2':
+      case '3':
         return OrderStatus.ready;
       case 'paid':
-      case '3':
+      case '4':
         return OrderStatus.paid;
+      case 'cancelled':
+      case '5':
+        return OrderStatus.cancelled;
       case 'pending':
-      case '0':
+      case '1':
       default:
         return OrderStatus.pending;
     }
@@ -54,252 +147,344 @@ enum OrderStatus {
   String get valueString => toString().split('.').last;
 }
 
+/*==================================================
+  MENU ITEM MODEL — khớp bảng [MenuItems]
+==================================================*/
 class MenuItem {
-  final String id;
+  final int menuItemId;
   final String name;
-  final String vietnameseName;
+  final String? description;
   final double price;
-  final String description;
-  final String emoji;
-  final String category;
+  final CategoryType category;
+  final String? imageUrl;
   final bool isAvailable;
+  final DateTime createdAt;
+  final DateTime? updatedAt;
 
   MenuItem({
-    required this.id,
+    required this.menuItemId,
     required this.name,
-    required this.vietnameseName,
+    this.description,
     required this.price,
-    required this.description,
-    this.emoji = "☕",
-    this.category = "Coffees",
+    required this.category,
+    this.imageUrl,
     this.isAvailable = true,
-  });
+    DateTime? createdAt,
+    this.updatedAt,
+  }) : createdAt = createdAt ?? DateTime.now();
 
   factory MenuItem.fromJson(Map<String, dynamic> json) {
     return MenuItem(
-      id: json['id']?.toString() ?? '',
+      menuItemId: json['menuItemId'] as int? ?? 0,
       name: json['name']?.toString() ?? '',
-      vietnameseName: json['vietnameseName']?.toString() ?? '',
+      description: json['description']?.toString(),
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
-      description: json['description']?.toString() ?? '',
-      emoji: json['emoji']?.toString() ?? '☕',
-      category: json['category']?.toString() ?? 'Coffees',
+      category: CategoryType.fromInt(json['category'] as int? ?? 99),
+      imageUrl: json['imageUrl']?.toString(),
       isAvailable: json['isAvailable'] as bool? ?? true,
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
+          : DateTime.now(),
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.tryParse(json['updatedAt'].toString())
+          : null,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      'menuItemId': menuItemId,
       'name': name,
-      'vietnameseName': vietnameseName,
-      'price': price,
       'description': description,
-      'emoji': emoji,
-      'category': category,
+      'price': price,
+      'category': category.value,
+      'imageUrl': imageUrl,
       'isAvailable': isAvailable,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
     };
   }
 
   MenuItem copyWith({
-    String? id,
+    int? menuItemId,
     String? name,
-    String? vietnameseName,
-    double? price,
     String? description,
-    String? emoji,
-    String? category,
+    double? price,
+    CategoryType? category,
+    String? imageUrl,
     bool? isAvailable,
+    DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return MenuItem(
-      id: id ?? this.id,
+      menuItemId: menuItemId ?? this.menuItemId,
       name: name ?? this.name,
-      vietnameseName: vietnameseName ?? this.vietnameseName,
-      price: price ?? this.price,
       description: description ?? this.description,
-      emoji: emoji ?? this.emoji,
+      price: price ?? this.price,
       category: category ?? this.category,
+      imageUrl: imageUrl ?? this.imageUrl,
       isAvailable: isAvailable ?? this.isAvailable,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
+
+  /// Helper: icon emoji dựa theo category
+  String get categoryIcon => category.icon;
+
+  /// Helper: label category tiếng Việt
+  String get categoryLabel => category.label;
 }
 
+/*==================================================
+  TABLE MODEL — khớp bảng [Tables]
+==================================================*/
 class TableModel {
-  final String id;
-  final String label;
-  final String description;
-  final String status;
+  final int tableId;
+  final int capacity;
+  final TableStatus status;
+  final DateTime createdAt;
 
   TableModel({
-    required this.id,
-    required this.label,
-    required this.description,
-    required this.status,
-  });
+    required this.tableId,
+    this.capacity = 4,
+    this.status = TableStatus.available,
+    DateTime? createdAt,
+  }) : createdAt = createdAt ?? DateTime.now();
+
+  /// Tự sinh label từ tableId (DB không có field label)
+  String get label => "Bàn #$tableId";
 
   factory TableModel.fromJson(Map<String, dynamic> json) {
     return TableModel(
-      id: json['id']?.toString() ?? '',
-      label: json['label']?.toString() ?? '',
-      description: json['description']?.toString() ?? '',
-      status: json['status']?.toString() ?? 'Empty',
+      tableId: json['tableId'] as int? ?? 0,
+      capacity: json['capacity'] as int? ?? 4,
+      status: TableStatus.fromInt(json['status'] as int? ?? 1),
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
+          : DateTime.now(),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'label': label,
-      'description': description,
-      'status': status,
+      'tableId': tableId,
+      'capacity': capacity,
+      'status': status.value,
+      'createdAt': createdAt.toIso8601String(),
     };
   }
 
   TableModel copyWith({
-    String? id,
-    String? label,
-    String? description,
-    String? status,
+    int? tableId,
+    int? capacity,
+    TableStatus? status,
+    DateTime? createdAt,
   }) {
     return TableModel(
-      id: id ?? this.id,
-      label: label ?? this.label,
-      description: description ?? this.description,
+      tableId: tableId ?? this.tableId,
+      capacity: capacity ?? this.capacity,
       status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 }
 
-class CartItem {
-  final MenuItem menuItem;
+/*==================================================
+  ORDER ITEM MODEL — khớp bảng [OrderItems]
+==================================================*/
+class OrderItemModel {
+  final int? orderItemId;
+  final int orderId;
+  final int menuItemId;
   final int quantity;
-  final String note;
+  final double unitPrice;
+  final String? note;
 
-  CartItem({
-    required this.menuItem,
-    this.quantity = 1,
-    this.note = "",
+  // Không có trong DB, dùng để hiển thị UI
+  final MenuItem? menuItemRef;
+
+  OrderItemModel({
+    this.orderItemId,
+    this.orderId = 0,
+    required this.menuItemId,
+    required this.quantity,
+    required this.unitPrice,
+    this.note,
+    this.menuItemRef,
   });
 
-  factory CartItem.fromJson(Map<String, dynamic> json) {
-    return CartItem(
-      menuItem: MenuItem.fromJson(json['menuItem'] as Map<String, dynamic>),
+  factory OrderItemModel.fromJson(Map<String, dynamic> json, {MenuItem? menuItemRef}) {
+    return OrderItemModel(
+      orderItemId: json['orderItemId'] as int?,
+      orderId: json['orderId'] as int? ?? 0,
+      menuItemId: json['menuItemId'] as int? ?? 0,
       quantity: json['quantity'] as int? ?? 1,
-      note: json['note']?.toString() ?? '',
+      unitPrice: (json['unitPrice'] as num?)?.toDouble() ?? 0.0,
+      note: json['note']?.toString(),
+      menuItemRef: menuItemRef,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'menuItem': menuItem.toJson(),
+      'orderItemId': orderItemId,
+      'orderId': orderId,
+      'menuItemId': menuItemId,
       'quantity': quantity,
+      'unitPrice': unitPrice,
       'note': note,
     };
   }
 
-  CartItem copyWith({
-    MenuItem? menuItem,
+  OrderItemModel copyWith({
+    int? orderItemId,
+    int? orderId,
+    int? menuItemId,
     int? quantity,
+    double? unitPrice,
     String? note,
+    MenuItem? menuItemRef,
   }) {
-    return CartItem(
-      menuItem: menuItem ?? this.menuItem,
+    return OrderItemModel(
+      orderItemId: orderItemId ?? this.orderItemId,
+      orderId: orderId ?? this.orderId,
+      menuItemId: menuItemId ?? this.menuItemId,
       quantity: quantity ?? this.quantity,
+      unitPrice: unitPrice ?? this.unitPrice,
       note: note ?? this.note,
+      menuItemRef: menuItemRef ?? this.menuItemRef,
     );
   }
 }
 
+/*==================================================
+  ORDER MODEL — khớp bảng [Orders]
+==================================================*/
 class OrderModel {
-  final String id;
-  final String tableId;
-  final List<CartItem> items;
+  final int orderId;
+  final int tableId;
+  final int? handledBy;
   final OrderStatus status;
-  final int timeMinutes;
-  final String timestamp;
-  final String note;
-  final String tableLabel;
+  final double totalAmount;
+  final String? note;
+  final DateTime createdAt;
+  final DateTime? updatedAt;
+  final List<OrderItemModel> items;
 
   OrderModel({
-    required this.id,
+    required this.orderId,
     required this.tableId,
-    required this.items,
-    required this.status,
-    required this.timeMinutes,
-    required this.timestamp,
-    required this.note,
-    required this.tableLabel,
-  });
+    this.handledBy,
+    this.status = OrderStatus.pending,
+    this.totalAmount = 0,
+    this.note,
+    DateTime? createdAt,
+    this.updatedAt,
+    this.items = const [],
+  }) : createdAt = createdAt ?? DateTime.now();
+
+  /// Tự sinh tableLabel từ tableId
+  String get tableLabel => "Bàn #$tableId";
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
     var rawItems = json['items'] as List? ?? [];
-    List<CartItem> itemList = rawItems
-        .map((it) => CartItem.fromJson(it as Map<String, dynamic>))
+    List<OrderItemModel> itemList = rawItems
+        .map((it) => OrderItemModel.fromJson(it as Map<String, dynamic>))
         .toList();
 
     return OrderModel(
-      id: json['id']?.toString() ?? '',
-      tableId: json['tableId']?.toString() ?? '',
+      orderId: json['orderId'] as int? ?? 0,
+      tableId: json['tableId'] as int? ?? 0,
+      handledBy: json['handledBy'] as int?,
+      status: json['status'] is int
+          ? OrderStatus.fromInt(json['status'] as int)
+          : OrderStatus.fromString(json['status']?.toString() ?? 'pending'),
+      totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0.0,
+      note: json['note']?.toString(),
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
+          : DateTime.now(),
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.tryParse(json['updatedAt'].toString())
+          : null,
       items: itemList,
-      status: OrderStatus.fromString(json['status']?.toString() ?? 'pending'),
-      timeMinutes: json['timeMinutes'] as int? ?? 0,
-      timestamp: json['timestamp']?.toString() ?? 'Vừa xong',
-      note: json['note']?.toString() ?? '',
-      tableLabel: json['tableLabel']?.toString() ?? '',
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      'orderId': orderId,
       'tableId': tableId,
-      'items': items.map((it) => it.toJson()).toList(),
-      'status': status.valueString,
-      'timeMinutes': timeMinutes,
-      'timestamp': timestamp,
+      'handledBy': handledBy,
+      'status': status.value,
+      'totalAmount': totalAmount,
       'note': note,
-      'tableLabel': tableLabel,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
+      'items': items.map((it) => it.toJson()).toList(),
     };
   }
 
   OrderModel copyWith({
-    String? id,
-    String? tableId,
-    List<CartItem>? items,
+    int? orderId,
+    int? tableId,
+    int? handledBy,
     OrderStatus? status,
-    int? timeMinutes,
-    String? timestamp,
+    double? totalAmount,
     String? note,
-    String? tableLabel,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    List<OrderItemModel>? items,
   }) {
     return OrderModel(
-      id: id ?? this.id,
+      orderId: orderId ?? this.orderId,
       tableId: tableId ?? this.tableId,
-      items: items ?? this.items,
+      handledBy: handledBy ?? this.handledBy,
       status: status ?? this.status,
-      timeMinutes: timeMinutes ?? this.timeMinutes,
-      timestamp: timestamp ?? this.timestamp,
+      totalAmount: totalAmount ?? this.totalAmount,
       note: note ?? this.note,
-      tableLabel: tableLabel ?? this.tableLabel,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      items: items ?? this.items,
     );
   }
 }
 
+/*==================================================
+  SEED DATA — khớp DB SEED
+==================================================*/
+
+/// Seed Menu Items — giá VND khớp DB
 final List<MenuItem> initialMenuItems = [
-  MenuItem(id: "m1", name: "Butter Croissant", vietnameseName: "Bánh Sừng Bò Pháp", price: 4.50, description: "Bánh sừng bò ngập hương bơ Pháp, giòn rụm thơm ngon nướng vàng ươm mỗi sáng.", emoji: "🥐", category: "Pastries"),
-  MenuItem(id: "m2", name: "Avocado Toast", vietnameseName: "Bánh Mì Trái Bơ", price: 12.00, description: "Bánh mì lát nướng giòn rải bơ tươi nhuyễn, cà chua bi và hạt chia hữu cơ.", emoji: "🥑", category: "Brunch"),
-  MenuItem(id: "m3", name: "Matcha Latte", vietnameseName: "Trà Xanh Nhật Matcha", price: 5.75, description: "Trà xanh matcha Nhật Bản thượng hạng đánh mịn cùng sữa hạt organic thơm béo.", emoji: "🍵", category: "Teas"),
-  MenuItem(id: "m4", name: "Quinoa Salmon Bowl", vietnameseName: "Cơm Salmond Quinoa", price: 14.50, description: "Cá hồi áp chảo thơm lừng cùng quinoa đỏ, khoai lang nướng và cải xoăn hữu cơ.", emoji: "🥗", category: "Brunch"),
-  MenuItem(id: "m5", name: "Espresso Doppio", vietnameseName: "Cà Phê Espresso Đôi", price: 3.50, description: "Cà phê pha máy Espresso Doppio đậm đà nguyên bản từ hạt Arabica Cầu Đất tinh tế.", emoji: "☕", category: "Coffees"),
-  MenuItem(id: "m6", name: "Fluffy Blueberry Pancake", vietnameseName: "Bánh Kẹp Việt Quất", price: 9.75, description: "Bánh pancake xếp lớp xốp mềm tràn ngập quả việt quất tươi và si rô phong nguyên chất.", emoji: "🥞", category: "Pastries"),
-  MenuItem(id: "m7", name: "Egg Benedict", vietnameseName: "Trứng Benedict Kiểu Anh", price: 13.00, description: "Trứng chần sánh dẻo, giăm bông hun khói và sốt bơ béo Hollandaise trên English muffin.", emoji: "🍳", category: "Brunch"),
-  MenuItem(id: "m8", name: "Peach Hibiscus Tea", vietnameseName: "Trà Hibiscus Đào Hồng", price: 6.00, description: "Vị chua thanh mát lành từ hoa hồng đài hòa quyện trà đào ngào mật ong ngọt nhẹ.", emoji: "🍑", category: "Teas"),
-  MenuItem(id: "m9", name: "Cold Brew Tonic", vietnameseName: "Cà Phê Lạnh Sủi Bọt", price: 6.50, description: "Cà phê sấy khô ủ lạnh 18 tiếng rót cùng nước tonic cao cấp sảng khoái và lát chanh vàng tươi.", emoji: "🍹", category: "Coffees"),
+  MenuItem(menuItemId: 1, name: "Espresso", description: "Italian espresso", price: 30000, category: CategoryType.coffee),
+  MenuItem(menuItemId: 2, name: "Latte", description: "Milk coffee", price: 45000, category: CategoryType.coffee),
+  MenuItem(menuItemId: 3, name: "Matcha Tea", description: "Japanese matcha", price: 50000, category: CategoryType.tea),
+  MenuItem(menuItemId: 4, name: "Cheesecake", description: "New York cheesecake", price: 55000, category: CategoryType.cake),
+  MenuItem(menuItemId: 5, name: "Orange Juice", description: "Fresh orange juice", price: 40000, category: CategoryType.juice),
 ];
 
+/// Seed Tables — 8 bàn khớp DB (Capacity: 4,4,4,4,6,6,8,8)
 final List<TableModel> systemTables = [
-  TableModel(id: "03", label: "Bàn #03", description: "Khu vực ấm cúng trong nhà", status: "Empty"),
-  TableModel(id: "08", label: "Bàn #08", description: "Cạnh cửa sổ ngắm phố xá", status: "Active"),
-  TableModel(id: "12", label: "Bàn #12", description: "Ban công gió mát lộng lẫy", status: "Empty"),
-  TableModel(id: "15", label: "Bàn #15", description: "Phòng VIP riêng tư sang trọng", status: "Empty"),
+  TableModel(tableId: 1, capacity: 4, status: TableStatus.available),
+  TableModel(tableId: 2, capacity: 4, status: TableStatus.available),
+  TableModel(tableId: 3, capacity: 4, status: TableStatus.available),
+  TableModel(tableId: 4, capacity: 4, status: TableStatus.available),
+  TableModel(tableId: 5, capacity: 6, status: TableStatus.available),
+  TableModel(tableId: 6, capacity: 6, status: TableStatus.available),
+  TableModel(tableId: 7, capacity: 8, status: TableStatus.available),
+  TableModel(tableId: 8, capacity: 8, status: TableStatus.occupied),
 ];
+
+/*==================================================
+  HELPER: Format tiền VND
+==================================================*/
+String formatVND(double amount) {
+  final intAmount = amount.round();
+  final str = intAmount.toString();
+  final result = str.replaceAllMapped(
+    RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+    (Match m) => '${m[1]}.',
+  );
+  return '${result}đ';
+}

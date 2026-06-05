@@ -7,12 +7,12 @@ import 'screens/customer_screen.dart';
 
 void main() {
   // Trong thực tế khi build ra web app, ID bàn có thể lấy từ URL query parameters
-  // Ví dụ: Uri.base.queryParameters['table'] ?? '08'
-  runApp(const CustomerApp(tableId: '08'));
+  // Ví dụ: int.tryParse(Uri.base.queryParameters['table'] ?? '8') ?? 8
+  runApp(const CustomerApp(tableId: 8));
 }
 
 class CustomerApp extends StatelessWidget {
-  final String tableId;
+  final int tableId;
   const CustomerApp({super.key, required this.tableId});
 
   @override
@@ -37,7 +37,7 @@ class CustomerApp extends StatelessWidget {
 }
 
 class CustomerMainScreen extends StatefulWidget {
-  final String tableId;
+  final int tableId;
   const CustomerMainScreen({super.key, required this.tableId});
 
   @override
@@ -50,7 +50,7 @@ class _CustomerMainScreenState extends State<CustomerMainScreen> {
   List<OrderModel> _orderQueue = [];
   OrderModel? _activeCustomerOrder;
 
-  final Map<String, int> _cart = {};
+  final Map<int, int> _cart = {};
 
   bool _isLoading = false;
   Timer? _syncTimer;
@@ -108,11 +108,11 @@ class _CustomerMainScreenState extends State<CustomerMainScreen> {
   void _syncActiveCustomerOrder() {
     if (_activeCustomerOrder != null) {
       final updated = _orderQueue.firstWhere(
-        (o) => o.id == _activeCustomerOrder!.id,
+        (o) => o.orderId == _activeCustomerOrder!.orderId,
         orElse: () => _activeCustomerOrder!,
       );
-      if (updated.status == OrderStatus.paid) {
-        _activeCustomerOrder = null; // cleared when paid
+      if (updated.status == OrderStatus.paid || updated.status == OrderStatus.cancelled) {
+        _activeCustomerOrder = null; // cleared when paid or cancelled
       } else {
         _activeCustomerOrder = updated;
       }
@@ -120,7 +120,7 @@ class _CustomerMainScreenState extends State<CustomerMainScreen> {
       // Look for any pending/preparing/ready order belonging to the current selected table
       final tableActiveOrders = _orderQueue
           .where((o) =>
-              o.tableId == widget.tableId && o.status != OrderStatus.paid)
+              o.tableId == widget.tableId && o.status != OrderStatus.paid && o.status != OrderStatus.cancelled)
           .toList();
       if (tableActiveOrders.isNotEmpty) {
         // use latest
@@ -131,35 +131,40 @@ class _CustomerMainScreenState extends State<CustomerMainScreen> {
 
   void _addCartItem(MenuItem item) {
     setState(() {
-      final count = _cart[item.id] ?? 0;
-      _cart[item.id] = count + 1;
+      final count = _cart[item.menuItemId] ?? 0;
+      _cart[item.menuItemId] = count + 1;
     });
   }
 
   void _removeCartItem(MenuItem item) {
     setState(() {
-      final count = _cart[item.id] ?? 0;
+      final count = _cart[item.menuItemId] ?? 0;
       if (count > 1) {
-        _cart[item.id] = count - 1;
+        _cart[item.menuItemId] = count - 1;
       } else {
-        _cart.remove(item.id);
+        _cart.remove(item.menuItemId);
       }
     });
   }
 
   Future<void> _submitCustomerOrder(
-      String tableId, List<CartItem> items, String note) async {
-    final orderId =
-        "B$tableId-${1000 + (DateTime.now().microsecondsSinceEpoch % 9000)}";
+      int tableId, List<OrderItemModel> items, String note) async {
+    final orderId = DateTime.now().microsecondsSinceEpoch % 900000;
+    
+    double totalAmount = 0;
+    for (var it in items) {
+      totalAmount += it.unitPrice * it.quantity;
+    }
+    totalAmount *= 1.10; // add 10% tax/service
+
     final customOrderObj = OrderModel(
-      id: orderId,
+      orderId: orderId,
       tableId: tableId,
       items: items,
       status: OrderStatus.pending,
-      timeMinutes: 5 + (DateTime.now().microsecondsSinceEpoch % 15),
-      timestamp: "Vừa xong",
+      totalAmount: totalAmount,
       note: note,
-      tableLabel: _selectedTableLabel,
+      createdAt: DateTime.now(),
     );
 
     setState(() => _isLoading = true);
@@ -190,17 +195,32 @@ class _CustomerMainScreenState extends State<CustomerMainScreen> {
 
   Future<void> _cancelCustomerOrder() async {
     if (_activeCustomerOrder == null) return;
-    final id = _activeCustomerOrder!.id;
-    setState(() {
-      _orderQueue.removeWhere((o) => o.id == id);
-      _activeCustomerOrder = null;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("🛑 Đã hủy đơn hàng thành công."),
-        backgroundColor: Colors.redAccent,
-      ),
-    );
+    final id = _activeCustomerOrder!.orderId;
+    
+    final success = await ApiService.updateOrderStatus(id, OrderStatus.cancelled);
+
+    if (success) {
+      setState(() {
+        final idx = _orderQueue.indexWhere((o) => o.orderId == id);
+        if (idx != -1) {
+          _orderQueue[idx] = _orderQueue[idx].copyWith(status: OrderStatus.cancelled);
+        }
+        _activeCustomerOrder = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("🛑 Đã hủy đơn hàng thành công."),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("❌ Không thể hủy đơn hàng lúc này."),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override

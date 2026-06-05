@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/item_model.dart';
+import '../models/account_model.dart';
 
 class ApiService {
   // Configurable base URL for C# ASP.NET Core backend
@@ -12,24 +13,32 @@ class ApiService {
   static final List<MenuItem> _mockMenuItems = List.from(initialMenuItems);
   static final List<OrderModel> _mockOrderQueue = [
     OrderModel(
-      id: "B08-31620",
-      tableId: "08",
-      timeMinutes: 0,
+      orderId: 1,
+      tableId: 8,
       items: [
-        CartItem(
-          menuItem: initialMenuItems.firstWhere((it) => it.id == "m5"),
+        OrderItemModel(
+          menuItemId: 1,
           quantity: 1,
+          unitPrice: 30000,
+          menuItemRef: initialMenuItems.firstWhere((it) => it.menuItemId == 1),
         ),
-        CartItem(
-          menuItem: initialMenuItems.firstWhere((it) => it.id == "m1"),
+        OrderItemModel(
+          menuItemId: 2,
           quantity: 2,
+          unitPrice: 45000,
+          menuItemRef: initialMenuItems.firstWhere((it) => it.menuItemId == 2),
         ),
       ],
       status: OrderStatus.preparing,
-      timestamp: "5 phút trước",
-      note: "Trà đào ít đá ngọt vừa, bánh nướng sừng bò nóng hổi giòn rụm",
-      tableLabel: "Bàn #08",
+      totalAmount: 120000,
+      note: "Latte ít đường, Espresso nóng",
     ),
+  ];
+
+  // Mock accounts khớp DB seed
+  static final List<AccountModel> _mockAccounts = [
+    seedAdmin,
+    seedStaff,
   ];
 
   // Helper to fetch response with timeout and error fallback
@@ -48,6 +57,31 @@ class ApiService {
     } catch (e) {
       return {"success": false, "error": e.toString()};
     }
+  }
+
+  // 0. AUTH API CALLS
+  static Future<AccountModel?> login(String username, String password) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse("$baseUrl/api/auth/login"),
+            headers: {"Content-Type": "application/json"},
+            body: jsonEncode({"username": username, "password": password}),
+          )
+          .timeout(const Duration(seconds: 3));
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return AccountModel.fromJson(jsonDecode(response.body));
+      }
+    } catch (_) {}
+
+    // Mock fallback
+    if (useMockFallback) {
+      final match = _mockAccounts.where(
+        (a) => a.username == username && (a.passwordHash == password || password == '12345'),
+      );
+      if (match.isNotEmpty) return match.first;
+    }
+    return null;
   }
 
   // 1. MENU API CALLS
@@ -84,7 +118,7 @@ class ApiService {
 
   static Future<bool> updateMenuItem(MenuItem item) async {
     // Modify local mock list as fallback
-    final idx = _mockMenuItems.indexWhere((it) => it.id == item.id);
+    final idx = _mockMenuItems.indexWhere((it) => it.menuItemId == item.menuItemId);
     if (idx != -1) {
       _mockMenuItems[idx] = item;
     }
@@ -92,7 +126,7 @@ class ApiService {
     try {
       final response = await http
           .put(
-            Uri.parse("$baseUrl/api/menu/${item.id}"),
+            Uri.parse("$baseUrl/api/menu/${item.menuItemId}"),
             headers: {"Content-Type": "application/json"},
             body: jsonEncode(item.toJson()),
           )
@@ -103,12 +137,12 @@ class ApiService {
     }
   }
 
-  static Future<bool> deleteMenuItem(String id) async {
-    _mockMenuItems.removeWhere((it) => it.id == id);
+  static Future<bool> deleteMenuItem(int menuItemId) async {
+    _mockMenuItems.removeWhere((it) => it.menuItemId == menuItemId);
 
     try {
       final response = await http
-          .delete(Uri.parse("$baseUrl/api/menu/$id"))
+          .delete(Uri.parse("$baseUrl/api/menu/$menuItemId"))
           .timeout(const Duration(seconds: 3));
       return response.statusCode >= 200 && response.statusCode < 300;
     } catch (_) {
@@ -116,8 +150,8 @@ class ApiService {
     }
   }
 
-  static Future<bool> toggleMenuItemAvailability(String id) async {
-    final idx = _mockMenuItems.indexWhere((it) => it.id == id);
+  static Future<bool> toggleMenuItemAvailability(int menuItemId) async {
+    final idx = _mockMenuItems.indexWhere((it) => it.menuItemId == menuItemId);
     if (idx != -1) {
       final original = _mockMenuItems[idx];
       _mockMenuItems[idx] = original.copyWith(
@@ -127,7 +161,7 @@ class ApiService {
 
     try {
       final response = await http
-          .patch(Uri.parse("$baseUrl/api/menu/$id/toggle-availability"))
+          .patch(Uri.parse("$baseUrl/api/menu/$menuItemId/toggle-availability"))
           .timeout(const Duration(seconds: 3));
       return response.statusCode >= 200 && response.statusCode < 300;
     } catch (_) {
@@ -167,10 +201,10 @@ class ApiService {
   }
 
   static Future<bool> updateOrderStatus(
-    String orderId,
+    int orderId,
     OrderStatus status,
   ) async {
-    final idx = _mockOrderQueue.indexWhere((o) => o.id == orderId);
+    final idx = _mockOrderQueue.indexWhere((o) => o.orderId == orderId);
     if (idx != -1) {
       _mockOrderQueue[idx] = _mockOrderQueue[idx].copyWith(status: status);
     }
@@ -180,7 +214,7 @@ class ApiService {
           .put(
             Uri.parse("$baseUrl/api/orders/$orderId/status"),
             headers: {"Content-Type": "application/json"},
-            body: jsonEncode({"status": status.valueString}),
+            body: jsonEncode({"status": status.value}),
           )
           .timeout(const Duration(seconds: 3));
       return response.statusCode >= 200 && response.statusCode < 300;
@@ -223,7 +257,7 @@ class ApiService {
   }
 
   static Future<bool> updateTable(TableModel table) async {
-    final idx = _mockTables.indexWhere((t) => t.id == table.id);
+    final idx = _mockTables.indexWhere((t) => t.tableId == table.tableId);
     if (idx != -1) {
       _mockTables[idx] = table;
     }
@@ -231,7 +265,7 @@ class ApiService {
     try {
       final response = await http
           .put(
-            Uri.parse("$baseUrl/api/tables/${table.id}"),
+            Uri.parse("$baseUrl/api/tables/${table.tableId}"),
             headers: {"Content-Type": "application/json"},
             body: jsonEncode(table.toJson()),
           )
@@ -242,8 +276,8 @@ class ApiService {
     }
   }
 
-  static Future<bool> deleteTable(String tableId) async {
-    _mockTables.removeWhere((t) => t.id == tableId);
+  static Future<bool> deleteTable(int tableId) async {
+    _mockTables.removeWhere((t) => t.tableId == tableId);
 
     try {
       final response = await http

@@ -8,7 +8,7 @@ class TableManagementScreen extends StatefulWidget {
   final List<TableModel> tables;
   final Function(TableModel) onAddTable;
   final Function(TableModel) onUpdateTable;
-  final Function(String) onDeleteTable;
+  final Function(int) onDeleteTable;
   final Function(TableModel) onExportQrCode;
 
   const TableManagementScreen({
@@ -35,130 +35,150 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
 
   void _showAddTableDialog() {
     final idController = TextEditingController();
-    final labelController = TextEditingController();
-    final descriptionController = TextEditingController();
+    final capacityController = TextEditingController(text: '4');
+    TableStatus status = TableStatus.available;
 
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Row(
-            children: [
-              Text(
-                "🍽️",
-                style: TextStyle(fontSize: 24),
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape:
+                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: const Row(
+                children: [
+                  Text(
+                    "🍽️",
+                    style: TextStyle(fontSize: 24),
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    "Thêm Bàn Mới",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: AromaColors.coffeeTextDark,
+                    ),
+                  ),
+                ],
               ),
-              SizedBox(width: 8),
-              Text(
-                "Thêm Bàn Mới",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                  color: AromaColors.coffeeTextDark,
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextField(
+                      controller: idController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: "ID Bàn (số nguyên, VD: 20)",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.all(12),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: capacityController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: "Sức chứa (số lượng khách)",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.all(12),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<TableStatus>(
+                      value: status,
+                      decoration: InputDecoration(
+                        labelText: "Trạng thái",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.all(12),
+                      ),
+                      items: TableStatus.values.map((s) {
+                        return DropdownMenuItem(
+                          value: s,
+                          child: Text(s.label),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setDialogState(() {
+                            status = val;
+                          });
+                        }
+                      },
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                TextField(
-                  controller: idController,
-                  decoration: InputDecoration(
-                    labelText: "ID Bàn (ví dụ: 20, 21)",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    contentPadding: const EdgeInsets.all(12),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    "Hủy",
+                    style: TextStyle(color: AromaColors.coffeeTextSub),
                   ),
                 ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: labelController,
-                  decoration: InputDecoration(
-                    labelText: "Tên Bàn (ví dụ: Bàn #20)",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                ElevatedButton(
+                  onPressed: () {
+                    final id = int.tryParse(idController.text.trim());
+                    if (id == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("ID bàn phải là số nguyên hợp lệ"),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+
+                    final capacity = int.tryParse(capacityController.text.trim()) ?? 4;
+
+                    final newTable = TableModel(
+                      tableId: id,
+                      capacity: capacity,
+                      status: status,
+                    );
+
+                    widget.onAddTable(newTable);
+                    setState(() {
+                      _tables.add(newTable);
+                    });
+
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          "✅ Đã thêm ${newTable.label} thành công",
+                        ),
+                        backgroundColor: AromaColors.successGreen,
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AromaColors.coffeePrimary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    contentPadding: const EdgeInsets.all(12),
                   ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: descriptionController,
-                  decoration: InputDecoration(
-                    labelText: "Mô Tả",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                  child: const Text(
+                    "Thêm",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
                     ),
-                    contentPadding: const EdgeInsets.all(12),
                   ),
-                  maxLines: 2,
                 ),
               ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                "Hủy",
-                style: TextStyle(color: AromaColors.coffeeTextSub),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (idController.text.isEmpty || labelController.text.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Vui lòng nhập đầy đủ thông tin"),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                  return;
-                }
-
-                final newTable = TableModel(
-                  id: idController.text.trim(),
-                  label: labelController.text.trim(),
-                  description: descriptionController.text.trim(),
-                  status: "Empty",
-                );
-
-                widget.onAddTable(newTable);
-                setState(() {
-                  _tables.add(newTable);
-                });
-
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      "✅ Đã thêm ${newTable.label} thành công",
-                    ),
-                    backgroundColor: AromaColors.successGreen,
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AromaColors.coffeePrimary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: const Text(
-                "Thêm",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
+            );
+          }
         );
       },
     );
@@ -210,7 +230,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                     height: 280,
                     child: FutureBuilder<Uint8List?>(
                       future:
-                          QrCodeGenerator.generateQrCode("table_${table.id}"),
+                          QrCodeGenerator.generateQrCode("table_${table.tableId}"),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
@@ -232,7 +252,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  "ID: ${table.id}",
+                  "ID: ${table.tableId}",
                   style: const TextStyle(
                     color: AromaColors.coffeeTextSub,
                     fontSize: 14,
@@ -277,7 +297,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
       ),
     );
 
-    final success = await QrCodeGenerator.saveQrCode(table.id, table.label);
+    final success = await QrCodeGenerator.saveQrCode(table.tableId.toString(), table.label);
 
     if (success) {
       widget.onExportQrCode(table);
@@ -319,9 +339,9 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                widget.onDeleteTable(table.id);
+                widget.onDeleteTable(table.tableId);
                 setState(() {
-                  _tables.removeWhere((t) => t.id == table.id);
+                  _tables.removeWhere((t) => t.tableId == table.tableId);
                 });
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -458,7 +478,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    table.description,
+                                    "Sức chứa: ${table.capacity} người",
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
@@ -473,21 +493,15 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: table.status == "Empty"
-                                          ? AromaColors.successGreen
-                                              .withOpacity(0.1)
-                                          : AromaColors.pendingOrange
-                                              .withOpacity(0.1),
+                                      color: table.status.color.withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
-                                      table.status,
+                                      table.status.label,
                                       style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.bold,
-                                        color: table.status == "Empty"
-                                            ? AromaColors.successGreen
-                                            : AromaColors.pendingOrange,
+                                        color: table.status.color,
                                       ),
                                     ),
                                   ),

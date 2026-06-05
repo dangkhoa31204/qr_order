@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../constants.dart';
+import '../models/account_model.dart';
+import '../services/api_service.dart';
 
 class LoginScreen extends StatefulWidget {
-  final Function(UserRole) onLoginSuccess;
+  final Function(AccountModel) onLoginSuccess;
 
   const LoginScreen({
     super.key,
@@ -27,7 +29,7 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _handleLogin() {
+  void _handleLogin() async {
     setState(() {
       _isLoading = true;
       _errorMessage = "";
@@ -36,26 +38,25 @@ class _LoginScreenState extends State<LoginScreen> {
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
 
-    // Simulate login validation
-    Future.delayed(const Duration(seconds: 1), () {
-      if (username.isEmpty || password.isEmpty) {
-        setState(() {
-          _errorMessage = "Vui lòng nhập tên đăng nhập và mật khẩu";
-          _isLoading = false;
-        });
-        return;
-      }
+    if (username.isEmpty || password.isEmpty) {
+      setState(() {
+        _errorMessage = "Vui lòng nhập tên đăng nhập và mật khẩu";
+        _isLoading = false;
+      });
+      return;
+    }
 
-      // Mock authentication - in real app, call API
-      if (username == "staff" && password == "12345") {
-        widget.onLoginSuccess(UserRole.staff);
-      } else {
-        setState(() {
-          _errorMessage = "Tên đăng nhập hoặc mật khẩu không chính xác";
-          _isLoading = false;
-        });
-      }
-    });
+    // Gọi API login (có mock fallback)
+    final account = await ApiService.login(username, password);
+
+    if (account != null) {
+      widget.onLoginSuccess(account);
+    } else {
+      setState(() {
+        _errorMessage = "Tên đăng nhập hoặc mật khẩu không chính xác";
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -95,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 32),
                 // Title
                 const Text(
-                  "AROMA BISTRO",
+                  "QR ORDERING",
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.w900,
@@ -142,12 +143,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 if (_errorMessage.isNotEmpty) const SizedBox(height: 24),
-                // Username Field
+                // Username Field — khớp Accounts.Username
                 TextField(
                   controller: _usernameController,
                   enabled: !_isLoading,
                   decoration: InputDecoration(
-                    labelText: "Tên đăng nhập",
+                    labelText: "Tên đăng nhập (Username)",
                     labelStyle: const TextStyle(
                       color: AromaColors.coffeeTextSub,
                       fontSize: 14,
@@ -182,7 +183,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                // Password Field
+                // Password Field — khớp Accounts.PasswordHash
                 TextField(
                   controller: _passwordController,
                   enabled: !_isLoading,
@@ -240,7 +241,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: Text(
-                    "Demo: staff/12345",
+                    "Demo: admin/12345 hoặc staff/12345",
                     style: TextStyle(
                       fontSize: 11,
                       color: AromaColors.coffeeTextSub.withOpacity(0.7),

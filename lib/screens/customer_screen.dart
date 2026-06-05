@@ -1,17 +1,18 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../constants.dart';
 import '../models/item_model.dart';
 
 class CustomerScreen extends StatefulWidget {
-  final Map<String, int> cart;
+  final Map<int, int> cart;
   final Function(MenuItem) onAddCart;
   final Function(MenuItem) onRemoveCart;
   final VoidCallback onBackToGateway;
-  final String selectedTableId;
+  final int selectedTableId;
   final String selectedTableLabel;
   final List<MenuItem> menuItems;
   final OrderModel? activeOrder;
-  final Function(String, List<CartItem>, String) onSubmitOrder;
+  final Function(int, List<OrderItemModel>, String) onSubmitOrder;
   final VoidCallback onCancelActiveOrder;
 
   const CustomerScreen({
@@ -33,15 +34,8 @@ class CustomerScreen extends StatefulWidget {
 }
 
 class _CustomerScreenState extends State<CustomerScreen> {
-  String _activeCategory = "All";
+  CategoryType? _activeCategory; // null means 'All'
   String _searchQuery = "";
-  final List<String> _categories = [
-    "All",
-    "Coffees",
-    "Teas",
-    "Pastries",
-    "Brunch",
-  ];
   final TextEditingController _noteController = TextEditingController();
 
   @override
@@ -55,17 +49,22 @@ class _CustomerScreenState extends State<CustomerScreen> {
     // Totals calculation
     double subtotal = 0.0;
     int totalItemsCount = 0;
-    List<CartItem> cartItems = [];
+    List<OrderItemModel> cartItems = [];
 
     widget.cart.forEach((itemId, qty) {
       if (qty > 0) {
         final item = widget.menuItems.firstWhere(
-          (it) => it.id == itemId,
+          (it) => it.menuItemId == itemId,
           orElse: () => initialMenuItems.first,
         );
         subtotal += item.price * qty;
         totalItemsCount += qty;
-        cartItems.add(CartItem(menuItem: item, quantity: qty));
+        cartItems.add(OrderItemModel(
+          menuItemId: item.menuItemId,
+          quantity: qty,
+          unitPrice: item.price,
+          menuItemRef: item,
+        ));
       }
     });
 
@@ -75,12 +74,9 @@ class _CustomerScreenState extends State<CustomerScreen> {
     // Menu filtering
     final filteredItems = widget.menuItems.where((item) {
       final matchesCategory =
-          _activeCategory == "All" || item.category == _activeCategory;
+          _activeCategory == null || item.category == _activeCategory;
       final matchesSearch =
-          item.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-              item.vietnameseName.toLowerCase().contains(
-                    _searchQuery.toLowerCase(),
-                  );
+          item.name.toLowerCase().contains(_searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
     }).toList();
 
@@ -148,7 +144,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    "Bàn: ${widget.selectedTableId}",
+                                    widget.selectedTableLabel,
                                     style: const TextStyle(
                                       fontSize: 11,
                                       color: AromaColors.coffeeTextSub,
@@ -175,7 +171,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
                           color: Colors.white,
                         ),
                         label: const Text(
-                          "Làm Mới",
+                          "Đổi Bàn",
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
@@ -203,51 +199,48 @@ class _CustomerScreenState extends State<CustomerScreen> {
             // Horizontal Custom Categories Row
             SizedBox(
               height: 48,
-              child: ListView.separated(
+              child: ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 scrollDirection: Axis.horizontal,
-                itemCount: _categories.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemCount: CategoryType.values.length + 1,
                 itemBuilder: (context, index) {
-                  final cat = _categories[index];
+                  CategoryType? cat = index == 0 ? null : CategoryType.values[index - 1];
                   final isSelected = cat == _activeCategory;
 
-                  String displayLabel = cat;
-                  if (cat == "All") displayLabel = "Tất cả menu";
-                  if (cat == "Coffees") displayLabel = "Cà phê ☕";
-                  if (cat == "Teas") displayLabel = "Trà hoa quả 🍵";
-                  if (cat == "Pastries") displayLabel = "Bánh ngọt 🥐";
-                  if (cat == "Brunch") displayLabel = "Điểm tâm 🥑";
+                  String displayLabel = cat == null ? "Tất cả" : "${cat.label} ${cat.icon}";
 
-                  return ChoiceChip(
-                    label: Text(
-                      displayLabel,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        color: isSelected
-                            ? Colors.white
-                            : AromaColors.coffeeTextSub,
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: ChoiceChip(
+                      label: Text(
+                        displayLabel,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: isSelected
+                              ? Colors.white
+                              : AromaColors.coffeeTextSub,
+                        ),
                       ),
-                    ),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      if (selected) {
-                        setState(() {
-                          _activeCategory = cat;
-                        });
-                      }
-                    },
-                    selectedColor: AromaColors.coffeePrimary,
-                    backgroundColor: AromaColors.coffeeSecondary,
-                    checkmarkColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(50),
-                    ),
-                    side: BorderSide.none,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        if (selected) {
+                          setState(() {
+                            _activeCategory = cat;
+                          });
+                        }
+                      },
+                      selectedColor: AromaColors.coffeePrimary,
+                      backgroundColor: AromaColors.coffeeSecondary,
+                      checkmarkColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(50),
+                      ),
+                      side: BorderSide.none,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                     ),
                   );
                 },
@@ -326,7 +319,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
                       separatorBuilder: (_, __) => const SizedBox(height: 16),
                       itemBuilder: (context, index) {
                         final item = filteredItems[index];
-                        final count = widget.cart[item.id] ?? 0;
+                        final count = widget.cart[item.menuItemId] ?? 0;
                         return _buildMenuItemCard(item, count);
                       },
                     ),
@@ -335,6 +328,28 @@ class _CustomerScreenState extends State<CustomerScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildItemImage(String path) {
+    // Kiểm tra nếu là file local (đường dẫn bắt đầu bằng / hoặc chứa :\)
+    final isLocalFile = !path.startsWith('http') && (path.startsWith('/') || path.contains(':\\'));
+    if (isLocalFile && File(path).existsSync()) {
+      return Image.file(
+        File(path),
+        width: 80,
+        height: 80,
+        fit: BoxFit.cover,
+      );
+    } else if (path.startsWith('http')) {
+      return Image.network(
+        path,
+        width: 80,
+        height: 80,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 32, color: Colors.grey),
+      );
+    }
+    return const Icon(Icons.image_not_supported, size: 32, color: Colors.grey);
   }
 
   Widget _buildMenuItemCard(MenuItem item, int count) {
@@ -349,7 +364,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
         padding: const EdgeInsets.all(14.0),
         child: Row(
           children: [
-            // Left Emoji container
+            // Left Emoji/Image container
             Stack(
               alignment: Alignment.center,
               children: [
@@ -361,7 +376,12 @@ class _CustomerScreenState extends State<CustomerScreen> {
                     borderRadius: BorderRadius.circular(18),
                   ),
                   alignment: Alignment.center,
-                  child: Text(item.emoji, style: const TextStyle(fontSize: 38)),
+                  child: item.imageUrl != null && item.imageUrl!.isNotEmpty
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(18),
+                          child: _buildItemImage(item.imageUrl!),
+                        )
+                      : Text(item.categoryIcon, style: const TextStyle(fontSize: 38)),
                 ),
                 if (!item.isAvailable)
                   Container(
@@ -399,42 +419,27 @@ class _CustomerScreenState extends State<CustomerScreen> {
                       color: AromaColors.coffeeTextDark,
                     ),
                   ),
-                  Text(
-                    item.vietnameseName,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: AromaColors.coffeeTextSub,
-                    ),
-                  ),
                   const SizedBox(height: 4),
-                  Text(
-                    item.description,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey,
-                      height: 1.3,
+                  if (item.description != null && item.description!.isNotEmpty)
+                    Text(
+                      item.description!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey,
+                        height: 1.3,
+                      ),
                     ),
-                  ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
                       Text(
-                        "\$${item.price.toStringAsFixed(2)}",
+                        formatVND(item.price),
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
                           color: AromaColors.coffeePrimary,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        "(~${(item.price * 25000).toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}đ)",
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey,
                         ),
                       ),
                     ],
@@ -535,13 +540,13 @@ class _CustomerScreenState extends State<CustomerScreen> {
   Widget? _buildBottomStatusBars(
     int totalItems,
     double subtotal,
-    List<CartItem> cartItems,
+    List<OrderItemModel> cartItems,
     double tax,
     double total,
   ) {
     final showCart = totalItems > 0;
     final showTracker = widget.activeOrder != null &&
-        widget.activeOrder!.status != OrderStatus.paid;
+        widget.activeOrder!.status != OrderStatus.paid && widget.activeOrder!.status != OrderStatus.cancelled;
 
     if (!showCart && !showTracker) return null;
 
@@ -563,7 +568,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
                 leading: Container(
                   width: 44,
                   height: 44,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: AromaColors.coffeeGold,
                     shape: BoxShape.circle,
                   ),
@@ -582,9 +587,9 @@ class _CustomerScreenState extends State<CustomerScreen> {
                     ),
                   ],
                 ),
-                subtitle: Text(
-                  "Ước lượng: ${widget.activeOrder!.timeMinutes} phút nữa • Chạm để xem",
-                  style: const TextStyle(color: Colors.white70, fontSize: 11),
+                subtitle: const Text(
+                  "Chạm để xem chi tiết tình trạng đơn",
+                  style: TextStyle(color: Colors.white70, fontSize: 11),
                 ),
                 trailing: const Icon(
                   Icons.arrow_forward_ios,
@@ -637,7 +642,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
                       ),
                       const SizedBox(width: 10),
                       const Text(
-                        "Xem giỏ hàng của bạn",
+                        "Xem giỏ hàng",
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -647,7 +652,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
                     ],
                   ),
                   Text(
-                    "\$${subtotal.toStringAsFixed(2)}",
+                    formatVND(subtotal),
                     style: const TextStyle(
                       color: AromaColors.coffeeGold,
                       fontWeight: FontWeight.bold,
@@ -664,7 +669,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
 
   void _showCartBottomSheet(
     BuildContext context,
-    List<CartItem> items,
+    List<OrderItemModel> items,
     double subtotal,
     double tax,
     double total,
@@ -681,7 +686,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
           builder: (BuildContext context, StateSetter setSheetState) {
             double curSubtotal = 0.0;
             items.forEach((it) {
-              curSubtotal += it.menuItem.price * it.quantity;
+              curSubtotal += it.unitPrice * it.quantity;
             });
             double curTax = curSubtotal * 0.10;
             double curTotal = curSubtotal + curTax;
@@ -701,37 +706,41 @@ class _CustomerScreenState extends State<CustomerScreen> {
                 tableLabel: widget.selectedTableLabel,
                 noteController: _noteController,
                 onIncrease: (item) {
-                  widget.onAddCart(item.menuItem);
-                  // Refresh modal local state
-                  final idx = items.indexWhere(
-                    (it) => it.menuItem.id == item.menuItem.id,
-                  );
-                  if (idx != -1) {
-                    setSheetState(() {
-                      items[idx] = items[idx].copyWith(
-                        quantity: items[idx].quantity + 1,
-                      );
-                    });
+                  if (item.menuItemRef != null) {
+                    widget.onAddCart(item.menuItemRef!);
+                    // Refresh modal local state
+                    final idx = items.indexWhere(
+                      (it) => it.menuItemId == item.menuItemId,
+                    );
+                    if (idx != -1) {
+                      setSheetState(() {
+                        items[idx] = items[idx].copyWith(
+                          quantity: items[idx].quantity + 1,
+                        );
+                      });
+                    }
+                    setState(() {}); // refresh outer screen
                   }
-                  setState(() {}); // refresh outer screen
                 },
                 onDecrease: (item) {
-                  widget.onRemoveCart(item.menuItem);
-                  final idx = items.indexWhere(
-                    (it) => it.menuItem.id == item.menuItem.id,
-                  );
-                  if (idx != -1) {
-                    setSheetState(() {
-                      if (items[idx].quantity > 1) {
-                        items[idx] = items[idx].copyWith(
-                          quantity: items[idx].quantity - 1,
-                        );
-                      } else {
-                        items.removeAt(idx);
-                      }
-                    });
+                  if (item.menuItemRef != null) {
+                    widget.onRemoveCart(item.menuItemRef!);
+                    final idx = items.indexWhere(
+                      (it) => it.menuItemId == item.menuItemId,
+                    );
+                    if (idx != -1) {
+                      setSheetState(() {
+                        if (items[idx].quantity > 1) {
+                          items[idx] = items[idx].copyWith(
+                            quantity: items[idx].quantity - 1,
+                          );
+                        } else {
+                          items.removeAt(idx);
+                        }
+                      });
+                    }
+                    setState(() {});
                   }
-                  setState(() {});
                 },
                 onCheckout: () {
                   if (items.isNotEmpty) {
@@ -775,14 +784,14 @@ class _CustomerScreenState extends State<CustomerScreen> {
 
 // Shopping cart visual items card
 class MainCartSheetContent extends StatelessWidget {
-  final List<CartItem> items;
+  final List<OrderItemModel> items;
   final double subtotal;
   final double tax;
   final double total;
   final String tableLabel;
   final TextEditingController noteController;
-  final Function(CartItem) onIncrease;
-  final Function(CartItem) onDecrease;
+  final Function(OrderItemModel) onIncrease;
+  final Function(OrderItemModel) onDecrease;
   final VoidCallback onCheckout;
 
   const MainCartSheetContent({
@@ -863,7 +872,7 @@ class MainCartSheetContent extends StatelessWidget {
                   return Row(
                     children: [
                       Text(
-                        it.menuItem.emoji,
+                        it.menuItemRef?.categoryIcon ?? '🍽️',
                         style: const TextStyle(fontSize: 24),
                       ),
                       const SizedBox(width: 12),
@@ -872,7 +881,7 @@ class MainCartSheetContent extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              it.menuItem.name,
+                              it.menuItemRef?.name ?? 'Món ăn',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
@@ -880,7 +889,7 @@ class MainCartSheetContent extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              "\$${(it.menuItem.price * it.quantity).toStringAsFixed(2)}",
+                              formatVND(it.unitPrice * it.quantity),
                               style: const TextStyle(
                                 color: AromaColors.coffeePrimary,
                                 fontSize: 12,
@@ -977,16 +986,16 @@ class MainCartSheetContent extends StatelessWidget {
           ),
           child: Column(
             children: [
-              _buildBillRow("Tạm tính:", "\$${subtotal.toStringAsFixed(2)}"),
+              _buildBillRow("Tạm tính:", formatVND(subtotal)),
               const SizedBox(height: 6),
               _buildBillRow(
                 "Thuế VAT & Phí DV (10%):",
-                "\$${tax.toStringAsFixed(2)}",
+                formatVND(tax),
               ),
               const Divider(height: 16),
               _buildBillRow(
                 "TỔNG CỘNG:",
-                "\$${total.toStringAsFixed(2)}",
+                formatVND(total),
                 isTotal: true,
               ),
             ],
@@ -1059,6 +1068,7 @@ class OrderTrackerDialog extends StatelessWidget {
     if (order.status == OrderStatus.preparing) currentStep = 1;
     if (order.status == OrderStatus.ready) currentStep = 2;
     if (order.status == OrderStatus.paid) currentStep = 3;
+    if (order.status == OrderStatus.cancelled) currentStep = -1;
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -1085,7 +1095,7 @@ class OrderTrackerDialog extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        "Mã đơn: ${order.id}",
+                        "Mã đơn: ${order.orderId}",
                         style: const TextStyle(
                           fontSize: 11,
                           color: AromaColors.coffeeTextSub,
@@ -1112,7 +1122,7 @@ class OrderTrackerDialog extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text("🔥", style: TextStyle(fontSize: 18)),
+                    Text(order.status == OrderStatus.cancelled ? "❌" : "🔥", style: const TextStyle(fontSize: 18)),
                     const SizedBox(width: 8),
                     Text(
                       order.status.labelVi.toUpperCase(),
@@ -1128,34 +1138,43 @@ class OrderTrackerDialog extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // Interactive Step Stepper Graphics
-              _buildProgressRow(
-                0,
-                "GỬI ĐƠN HÀNG CHỜ DUYỆT",
-                "Chờ bếp xác nhận nấu",
-                currentStep >= 0,
-              ),
-              _buildConnectorLine(currentStep >= 1),
-              _buildProgressRow(
-                1,
-                "BẾP ĐANG CHẾ BIẾN MÓN",
-                "Món ăn đang được nấu nướng",
-                currentStep >= 1,
-              ),
-              _buildConnectorLine(currentStep >= 2),
-              _buildProgressRow(
-                2,
-                "BÀN ĂN HOÀN THÀNH MÓN",
-                "Mời bạn thưởng thức tại bàn",
-                currentStep >= 2,
-              ),
-              _buildConnectorLine(currentStep >= 3),
-              _buildProgressRow(
-                3,
-                "ĐÃ THANH TOÁN XONG",
-                "Chúc quý khách ngày tốt lành",
-                currentStep >= 3,
-              ),
+              if (currentStep >= 0) ...[
+                // Interactive Step Stepper Graphics
+                _buildProgressRow(
+                  0,
+                  "GỬI ĐƠN HÀNG CHỜ DUYỆT",
+                  "Chờ bếp xác nhận nấu",
+                  currentStep >= 0,
+                ),
+                _buildConnectorLine(currentStep >= 1),
+                _buildProgressRow(
+                  1,
+                  "BẾP ĐANG CHẾ BIẾN MÓN",
+                  "Món ăn đang được nấu nướng",
+                  currentStep >= 1,
+                ),
+                _buildConnectorLine(currentStep >= 2),
+                _buildProgressRow(
+                  2,
+                  "BÀN ĂN HOÀN THÀNH MÓN",
+                  "Mời bạn thưởng thức tại bàn",
+                  currentStep >= 2,
+                ),
+                _buildConnectorLine(currentStep >= 3),
+                _buildProgressRow(
+                  3,
+                  "ĐÃ THANH TOÁN XONG",
+                  "Chúc quý khách ngày tốt lành",
+                  currentStep >= 3,
+                ),
+              ] else ...[
+                const Center(
+                  child: Text(
+                    "Đơn hàng này đã bị hủy.",
+                    style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+                  ),
+                )
+              ],
 
               const SizedBox(height: 24),
               const Text(
@@ -1188,7 +1207,7 @@ class OrderTrackerDialog extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              "${it.menuItem.emoji} ${it.menuItem.name} x${it.quantity}",
+                              "${it.menuItemRef?.categoryIcon ?? '🍽️'} ${it.menuItemRef?.name ?? 'Món ăn'} x${it.quantity}",
                               style: const TextStyle(
                                 fontSize: 12,
                                 color: AromaColors.coffeeTextDark,
@@ -1196,7 +1215,7 @@ class OrderTrackerDialog extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              "\$${(it.menuItem.price * it.quantity).toStringAsFixed(2)}",
+                              formatVND(it.unitPrice * it.quantity),
                               style: const TextStyle(
                                 fontSize: 12,
                                 color: AromaColors.coffeePrimary,
@@ -1207,7 +1226,7 @@ class OrderTrackerDialog extends StatelessWidget {
                         ),
                       );
                     }).toList(),
-                    if (order.note.isNotEmpty) ...[
+                    if (order.note?.isNotEmpty == true) ...[
                       const Divider(),
                       Container(
                         alignment: Alignment.centerLeft,
