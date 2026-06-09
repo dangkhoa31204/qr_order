@@ -44,9 +44,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
   }
 
   void _showAddTableDialog() {
-    final idController = TextEditingController();
     final capacityController = TextEditingController(text: '4');
-    TableStatus status = TableStatus.available;
 
     showDialog(
       context: context,
@@ -79,18 +77,6 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     TextField(
-                      controller: idController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: "ID Bàn (số nguyên, VD: 20)",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        contentPadding: const EdgeInsets.all(12),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
                       controller: capacityController,
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
@@ -100,30 +86,6 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                         ),
                         contentPadding: const EdgeInsets.all(12),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<TableStatus>(
-                      value: status,
-                      decoration: InputDecoration(
-                        labelText: "Trạng thái",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        contentPadding: const EdgeInsets.all(12),
-                      ),
-                      items: TableStatus.values.map((s) {
-                        return DropdownMenuItem(
-                          value: s,
-                          child: Text(s.label),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                        if (val != null) {
-                          setDialogState(() {
-                            status = val;
-                          });
-                        }
-                      },
                     ),
                   ],
                 ),
@@ -138,23 +100,28 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    final id = int.tryParse(idController.text.trim());
-                    if (id == null) {
+                    final capacity = int.tryParse(capacityController.text.trim());
+                    if (capacity == null || capacity <= 0) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text("ID bàn phải là số nguyên hợp lệ"),
+                          content: Text("Sức chứa phải là số nguyên lớn hơn 0"),
                           backgroundColor: Colors.red,
                         ),
                       );
                       return;
                     }
 
-                    final capacity = int.tryParse(capacityController.text.trim()) ?? 4;
+                    // Tự sinh ID tạm thời cho offline fallback
+                    int maxId = 0;
+                    for (var t in _tables) {
+                      if (t.tableId > maxId) maxId = t.tableId;
+                    }
+                    final tempId = maxId + 1;
 
                     final newTable = TableModel(
-                      tableId: id,
+                      tableId: tempId,
                       capacity: capacity,
-                      status: status,
+                      status: TableStatus.available,
                     );
 
                     widget.onAddTable(newTable);
@@ -166,7 +133,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          "✅ Đã thêm ${newTable.label} thành công",
+                          "✅ Đã thêm bàn thành công (Sức chứa: $capacity)",
                         ),
                         backgroundColor: AromaColors.successGreen,
                       ),

@@ -320,14 +320,22 @@ class ApiService {
   }
 
   static Future<bool> createTable(TableModel table) async {
-    _mockTables.add(table);
+    // Generate an auto-increment ID for offline fallback
+    int maxId = 0;
+    for (var t in _mockTables) {
+      if (t.tableId > maxId) maxId = t.tableId;
+    }
+    final mockTable = table.copyWith(tableId: maxId + 1);
+    _mockTables.add(mockTable);
 
     try {
       final response = await http
           .post(
             Uri.parse("$baseUrl/api/Tables"),
             headers: _authHeaders,
-            body: jsonEncode(table.toJson()),
+            body: jsonEncode({
+              "capacity": table.capacity,
+            }),
           )
           .timeout(const Duration(seconds: 10));
       return response.statusCode >= 200 && response.statusCode < 300;
@@ -347,7 +355,10 @@ class ApiService {
           .put(
             Uri.parse("$baseUrl/api/Tables/${table.tableId}"),
             headers: _authHeaders,
-            body: jsonEncode(table.toJson()),
+            body: jsonEncode({
+              "capacity": table.capacity,
+              "status": table.status.value,
+            }),
           )
           .timeout(const Duration(seconds: 10));
       return response.statusCode >= 200 && response.statusCode < 300;
