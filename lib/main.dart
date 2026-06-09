@@ -63,6 +63,7 @@ class _MainGateScreenState extends State<MainGateScreen> {
   List<MenuItem> _menuItems = [];
   List<OrderModel> _orderQueue = [];
   List<TableModel> _tables = [];
+  List<AccountModel> _staffAccounts = [];
 
   bool _isLoading = false;
   Timer? _syncTimer;
@@ -70,10 +71,11 @@ class _MainGateScreenState extends State<MainGateScreen> {
   @override
   void initState() {
     super.initState();
-    _loadBackendData();
-    // Periodically sync every 2 seconds to simulate real-time sockets (SignalR / WebSockets)
+    // Khởi tạo Timer nhưng chỉ chạy nếu đã đăng nhập
     _syncTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
-      _syncOrdersOnly();
+      if (_isLoggedIn) {
+        _syncOrdersOnly();
+      }
     });
   }
 
@@ -92,11 +94,13 @@ class _MainGateScreenState extends State<MainGateScreen> {
       final menu = await ApiService.fetchMenuItems();
       final orders = await ApiService.fetchOrderQueue();
       final tables = await ApiService.fetchTables();
+      final staffAccounts = await ApiService.fetchStaffAccounts();
 
       setState(() {
         _menuItems = menu;
         _orderQueue = orders;
         _tables = tables;
+        _staffAccounts = staffAccounts;
       });
     } catch (e) {
       print("Error loading backend data: $e");
@@ -181,6 +185,44 @@ class _MainGateScreenState extends State<MainGateScreen> {
     }
   }
 
+  Future<bool> _createStaffAccount({
+    required String username,
+    required String email,
+    required String password,
+    required String fullName,
+    required String phoneNumber,
+  }) async {
+    final created = await ApiService.createStaffAccount(
+      username: username,
+      email: email,
+      password: password,
+      fullName: fullName,
+      phoneNumber: phoneNumber,
+    );
+    if (created != null) {
+      await _loadBackendData();
+      return true;
+    }
+    return false;
+  }
+
+  Future<bool> _updateStaffAccount(AccountModel account) async {
+    final updated = await ApiService.updateAccount(account);
+    if (updated != null) {
+      await _loadBackendData();
+      return true;
+    }
+    return false;
+  }
+
+  Future<bool> _deleteStaffAccount(int accountId) async {
+    final success = await ApiService.deleteAccount(accountId);
+    if (success) {
+      await _loadBackendData();
+    }
+    return success;
+  }
+
   void _exportQrCode(TableModel table) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -195,7 +237,7 @@ class _MainGateScreenState extends State<MainGateScreen> {
       _isLoggedIn = true;
       _currentUser = account;
     });
-    _loadBackendData();
+    _loadBackendData(); // Tải dữ liệu ngay sau khi đăng nhập thành công
   }
 
   UserRole get _currentRole {
@@ -295,6 +337,7 @@ class _MainGateScreenState extends State<MainGateScreen> {
       orders: _orderQueue,
       menuItems: _menuItems,
       tables: _tables,
+      staffAccounts: _staffAccounts,
       onUpdateOrderStatus: _updateOrderStatus,
       onToggleAvailability: _toggleAvailability,
       onCreateMenuItem: _createMenuItem,
@@ -304,6 +347,9 @@ class _MainGateScreenState extends State<MainGateScreen> {
       onUpdateTable: _updateTable,
       onDeleteTable: _deleteTable,
       onExportQrCode: _exportQrCode,
+      onCreateStaffAccount: _createStaffAccount,
+      onUpdateStaffAccount: _updateStaffAccount,
+      onDeleteStaffAccount: _deleteStaffAccount,
       currentUser: _currentUser,
       onBackToGateway: () {
         ApiService.clearToken();

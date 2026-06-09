@@ -10,6 +10,7 @@ class TableManagementScreen extends StatefulWidget {
   final Function(TableModel) onUpdateTable;
   final Function(int) onDeleteTable;
   final Function(TableModel) onExportQrCode;
+  final bool canAddTables;
 
   const TableManagementScreen({
     super.key,
@@ -18,6 +19,7 @@ class TableManagementScreen extends StatefulWidget {
     required this.onUpdateTable,
     required this.onDeleteTable,
     required this.onExportQrCode,
+    this.canAddTables = true,
   });
 
   @override
@@ -49,280 +51,281 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
     showDialog(
       context: context,
       builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              shape:
-                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              title: const Row(
-                children: [
-                  Text(
-                    "🍽️",
-                    style: TextStyle(fontSize: 24),
+        return StatefulBuilder(builder: (context, setDialogState) {
+          return AlertDialog(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Row(
+              children: [
+                Text(
+                  "🍽️",
+                  style: TextStyle(fontSize: 24),
+                ),
+                SizedBox(width: 8),
+                Text(
+                  "Thêm Bàn Mới",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: AromaColors.coffeeTextDark,
                   ),
-                  SizedBox(width: 8),
-                  Text(
-                    "Thêm Bàn Mới",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: AromaColors.coffeeTextDark,
+                ),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextField(
+                    controller: capacityController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: "Sức chứa (số lượng khách)",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      contentPadding: const EdgeInsets.all(12),
                     ),
                   ),
                 ],
               ),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    TextField(
-                      controller: capacityController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: "Sức chứa (số lượng khách)",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        contentPadding: const EdgeInsets.all(12),
-                      ),
-                    ),
-                  ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  "Hủy",
+                  style: TextStyle(color: AromaColors.coffeeTextSub),
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    "Hủy",
-                    style: TextStyle(color: AromaColors.coffeeTextSub),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    final capacity = int.tryParse(capacityController.text.trim());
-                    if (capacity == null || capacity <= 0) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Sức chứa phải là số nguyên lớn hơn 0"),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                      return;
-                    }
-
-                    // Tự sinh ID tạm thời cho offline fallback
-                    int maxId = 0;
-                    for (var t in _tables) {
-                      if (t.tableId > maxId) maxId = t.tableId;
-                    }
-                    final tempId = maxId + 1;
-
-                    final newTable = TableModel(
-                      tableId: tempId,
-                      capacity: capacity,
-                      status: TableStatus.available,
-                    );
-
-                    widget.onAddTable(newTable);
-                    setState(() {
-                      _tables.add(newTable);
-                    });
-
-                    Navigator.pop(context);
+              ElevatedButton(
+                onPressed: () {
+                  final capacity = int.tryParse(capacityController.text.trim());
+                  if (capacity == null || capacity <= 0) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          "✅ Đã thêm bàn thành công (Sức chứa: $capacity)",
-                        ),
-                        backgroundColor: AromaColors.successGreen,
+                      const SnackBar(
+                        content: Text("Sức chứa phải là số nguyên lớn hơn 0"),
+                        backgroundColor: Colors.red,
                       ),
                     );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AromaColors.coffeePrimary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                    return;
+                  }
+
+                  // Tự sinh ID tạm thời cho offline fallback
+                  int maxId = 0;
+                  for (var t in _tables) {
+                    if (t.tableId > maxId) maxId = t.tableId;
+                  }
+                  final tempId = maxId + 1;
+
+                  final newTable = TableModel(
+                    tableId: tempId,
+                    capacity: capacity,
+                    status: TableStatus.available,
+                  );
+
+                  widget.onAddTable(newTable);
+                  setState(() {
+                    _tables.add(newTable);
+                  });
+
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        "✅ Đã thêm bàn thành công (Sức chứa: $capacity)",
+                      ),
+                      backgroundColor: AromaColors.successGreen,
                     ),
-                  ),
-                  child: const Text(
-                    "Thêm",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AromaColors.coffeePrimary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-              ],
-            );
-          }
-        );
+                child: const Text(
+                  "Thêm",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          );
+        });
       },
     );
   }
 
   void _showEditTableDialog(TableModel table) {
-    final capacityController = TextEditingController(text: table.capacity.toString());
+    final capacityController =
+        TextEditingController(text: table.capacity.toString());
     TableStatus status = table.status;
 
     showDialog(
       context: context,
       builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              shape:
-                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              title: Row(
-                children: [
-                  const Text(
-                    "✏️",
-                    style: TextStyle(fontSize: 24),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    "Sửa ${table.label}",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: AromaColors.coffeeTextDark,
-                    ),
-                  ),
-                ],
-              ),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // ID bàn chỉ hiển thị, không cho sửa
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AromaColors.coffeeSecondary,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AromaColors.coffeeCardBorder),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.tag, size: 18, color: AromaColors.coffeeTextSub),
-                          const SizedBox(width: 8),
-                          Text(
-                            "ID Bàn: ${table.tableId}",
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: AromaColors.coffeeTextDark,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: capacityController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: "Sức chứa (số lượng khách)",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        contentPadding: const EdgeInsets.all(12),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<TableStatus>(
-                      value: status,
-                      decoration: InputDecoration(
-                        labelText: "Trạng thái",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        contentPadding: const EdgeInsets.all(12),
-                      ),
-                      items: TableStatus.values.map((s) {
-                        return DropdownMenuItem(
-                          value: s,
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 10,
-                                height: 10,
-                                decoration: BoxDecoration(
-                                  color: s.color,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(s.label),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                        if (val != null) {
-                          setDialogState(() {
-                            status = val;
-                          });
-                        }
-                      },
-                    ),
-                  ],
+        return StatefulBuilder(builder: (context, setDialogState) {
+          return AlertDialog(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(
+              children: [
+                const Text(
+                  "✏️",
+                  style: TextStyle(fontSize: 24),
                 ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    "Hủy",
-                    style: TextStyle(color: AromaColors.coffeeTextSub),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    final capacity = int.tryParse(capacityController.text.trim()) ?? table.capacity;
-
-                    final updatedTable = table.copyWith(
-                      capacity: capacity,
-                      status: status,
-                    );
-
-                    widget.onUpdateTable(updatedTable);
-                    setState(() {
-                      final idx = _tables.indexWhere((t) => t.tableId == table.tableId);
-                      if (idx != -1) {
-                        _tables[idx] = updatedTable;
-                      }
-                    });
-
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          "✅ Đã cập nhật ${updatedTable.label} thành công",
-                        ),
-                        backgroundColor: AromaColors.successGreen,
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AromaColors.coffeePrimary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: const Text(
-                    "Lưu",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
+                const SizedBox(width: 8),
+                Text(
+                  "Sửa ${table.label}",
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: AromaColors.coffeeTextDark,
                   ),
                 ),
               ],
-            );
-          }
-        );
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // ID bàn chỉ hiển thị, không cho sửa
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AromaColors.coffeeSecondary,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AromaColors.coffeeCardBorder),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.tag,
+                            size: 18, color: AromaColors.coffeeTextSub),
+                        const SizedBox(width: 8),
+                        Text(
+                          "ID Bàn: ${table.tableId}",
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AromaColors.coffeeTextDark,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: capacityController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: "Sức chứa (số lượng khách)",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      contentPadding: const EdgeInsets.all(12),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<TableStatus>(
+                    value: status,
+                    decoration: InputDecoration(
+                      labelText: "Trạng thái",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      contentPadding: const EdgeInsets.all(12),
+                    ),
+                    items: TableStatus.values.map((s) {
+                      return DropdownMenuItem(
+                        value: s,
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: s.color,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(s.label),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setDialogState(() {
+                          status = val;
+                        });
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  "Hủy",
+                  style: TextStyle(color: AromaColors.coffeeTextSub),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  final capacity =
+                      int.tryParse(capacityController.text.trim()) ??
+                          table.capacity;
+
+                  final updatedTable = table.copyWith(
+                    capacity: capacity,
+                    status: status,
+                  );
+
+                  widget.onUpdateTable(updatedTable);
+                  setState(() {
+                    final idx =
+                        _tables.indexWhere((t) => t.tableId == table.tableId);
+                    if (idx != -1) {
+                      _tables[idx] = updatedTable;
+                    }
+                  });
+
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        "✅ Đã cập nhật ${updatedTable.label} thành công",
+                      ),
+                      backgroundColor: AromaColors.successGreen,
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AromaColors.coffeePrimary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: const Text(
+                  "Lưu",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          );
+        });
       },
     );
   }
@@ -404,7 +407,8 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                 ),
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: AromaColors.coffeeSecondary,
                     borderRadius: BorderRadius.circular(8),
@@ -457,7 +461,8 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
       ),
     );
 
-    final success = await QrCodeGenerator.saveQrCode(table.tableId.toString(), table.label);
+    final success =
+        await QrCodeGenerator.saveQrCode(table.tableId.toString(), table.label);
 
     if (success) {
       widget.onExportQrCode(table);
@@ -542,18 +547,19 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                   color: AromaColors.coffeeTextDark,
                 ),
               ),
-              ElevatedButton.icon(
-                onPressed: _showAddTableDialog,
-                icon: const Icon(Icons.add),
-                label: const Text("Thêm Bàn"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AromaColors.coffeePrimary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              if (widget.canAddTables)
+                ElevatedButton.icon(
+                  onPressed: _showAddTableDialog,
+                  icon: const Icon(Icons.add),
+                  label: const Text("Thêm Bàn"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AromaColors.coffeePrimary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
         ),
@@ -582,9 +588,11 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      const Text(
-                        "Nhấn 'Thêm Bàn' để bắt đầu",
-                        style: TextStyle(
+                      Text(
+                        widget.canAddTables
+                            ? "Nhấn 'Thêm Bàn' để bắt đầu"
+                            : "Chưa có dữ liệu bàn để hiển thị",
+                        style: const TextStyle(
                           fontSize: 12,
                           color: AromaColors.coffeeTextSub,
                         ),
@@ -653,7 +661,8 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: table.status.color.withOpacity(0.1),
+                                      color:
+                                          table.status.color.withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
@@ -686,14 +695,15 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                   onPressed: () => _showEditTableDialog(table),
                                   tooltip: "Sửa bàn",
                                 ),
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.delete,
-                                    color: Colors.red,
+                                if (widget.canAddTables)
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.delete,
+                                      color: Colors.red,
+                                    ),
+                                    onPressed: () => _deleteTable(table),
+                                    tooltip: "Xóa bàn",
                                   ),
-                                  onPressed: () => _deleteTable(table),
-                                  tooltip: "Xóa bàn",
-                                ),
                               ],
                             ),
                           ],

@@ -457,11 +457,70 @@ class OrderModel {
 
 /// Seed Menu Items — giá VND khớp DB
 final List<MenuItem> initialMenuItems = [
-  MenuItem(menuItemId: 1, name: "Espresso", description: "Italian espresso", price: 30000, category: CategoryType.coffee),
-  MenuItem(menuItemId: 2, name: "Latte", description: "Milk coffee", price: 45000, category: CategoryType.coffee),
-  MenuItem(menuItemId: 3, name: "Matcha Tea", description: "Japanese matcha", price: 50000, category: CategoryType.tea),
-  MenuItem(menuItemId: 4, name: "Cheesecake", description: "New York cheesecake", price: 55000, category: CategoryType.cake),
-  MenuItem(menuItemId: 5, name: "Orange Juice", description: "Fresh orange juice", price: 40000, category: CategoryType.juice),
+  MenuItem(
+    menuItemId: 1,
+    name: "Espresso",
+    description: "Italian espresso",
+    price: 30000,
+    category: CategoryType.coffee,
+    isAvailable: false,
+  ),
+  MenuItem(
+    menuItemId: 2,
+    name: "Latte",
+    description: "Milk coffee",
+    price: 45000,
+    category: CategoryType.coffee,
+    isAvailable: false,
+  ),
+  MenuItem(
+    menuItemId: 3,
+    name: "Matcha Tea",
+    description: "Japanese matcha",
+    price: 50000,
+    category: CategoryType.tea,
+    isAvailable: true,
+  ),
+  MenuItem(
+    menuItemId: 4,
+    name: "Cheesecake",
+    description: "New York cheesecake",
+    price: 55000,
+    category: CategoryType.cake,
+    isAvailable: false,
+  ),
+  MenuItem(
+    menuItemId: 5,
+    name: "Orange Juice",
+    description: "Fresh orange juice",
+    price: 40000,
+    category: CategoryType.juice,
+    isAvailable: true,
+  ),
+  MenuItem(
+    menuItemId: 6,
+    name: "CaPheTrung",
+    description: "ca phe rat ng...",
+    price: 20000,
+    category: CategoryType.coffee,
+    isAvailable: false,
+  ),
+  MenuItem(
+    menuItemId: 7,
+    name: "aas",
+    description: "asdasd",
+    price: 30000,
+    category: CategoryType.coffee,
+    isAvailable: false,
+  ),
+  MenuItem(
+    menuItemId: 8,
+    name: "v Brainy",
+    description: "co",
+    price: 30000,
+    category: CategoryType.tea,
+    isAvailable: true,
+  ),
 ];
 
 /// Seed Tables — 8 bàn khớp DB (Capacity: 4,4,4,4,6,6,8,8)

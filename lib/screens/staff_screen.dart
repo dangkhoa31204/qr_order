@@ -10,6 +10,7 @@ class StaffScreen extends StatefulWidget {
   final List<OrderModel> orders;
   final List<MenuItem> menuItems;
   final List<TableModel> tables;
+  final List<AccountModel> staffAccounts;
   final Function(int, OrderStatus) onUpdateOrderStatus;
   final Function(int) onToggleAvailability;
   final Function(MenuItem) onCreateMenuItem;
@@ -19,6 +20,15 @@ class StaffScreen extends StatefulWidget {
   final Function(TableModel) onUpdateTable;
   final Function(int) onDeleteTable;
   final Function(TableModel) onExportQrCode;
+  final Future<bool> Function({
+    required String username,
+    required String email,
+    required String password,
+    required String fullName,
+    required String phoneNumber,
+  }) onCreateStaffAccount;
+  final Future<bool> Function(AccountModel) onUpdateStaffAccount;
+  final Future<bool> Function(int) onDeleteStaffAccount;
   final AccountModel? currentUser;
   final VoidCallback onBackToGateway;
 
@@ -27,6 +37,7 @@ class StaffScreen extends StatefulWidget {
     required this.orders,
     required this.menuItems,
     required this.tables,
+    required this.staffAccounts,
     required this.onUpdateOrderStatus,
     required this.onToggleAvailability,
     required this.onCreateMenuItem,
@@ -36,6 +47,9 @@ class StaffScreen extends StatefulWidget {
     required this.onUpdateTable,
     required this.onDeleteTable,
     required this.onExportQrCode,
+    required this.onCreateStaffAccount,
+    required this.onUpdateStaffAccount,
+    required this.onDeleteStaffAccount,
     this.currentUser,
     required this.onBackToGateway,
   });
@@ -48,10 +62,12 @@ class _StaffScreenState extends State<StaffScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  bool get _isAdmin => widget.currentUser?.role == AccountRole.admin;
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: _isAdmin ? 4 : 3, vsync: this);
   }
 
   @override
@@ -63,10 +79,14 @@ class _StaffScreenState extends State<StaffScreen>
   @override
   Widget build(BuildContext context) {
     // Separate active order vs historic/paid orders
-    final activeOrders =
-        widget.orders.where((o) => o.status != OrderStatus.paid && o.status != OrderStatus.cancelled).toList();
-    final historicOrders =
-        widget.orders.where((o) => o.status == OrderStatus.paid || o.status == OrderStatus.cancelled).toList();
+    final activeOrders = widget.orders
+        .where((o) =>
+            o.status != OrderStatus.paid && o.status != OrderStatus.cancelled)
+        .toList();
+    final historicOrders = widget.orders
+        .where((o) =>
+            o.status == OrderStatus.paid || o.status == OrderStatus.cancelled)
+        .toList();
 
     return Scaffold(
       backgroundColor: AromaColors.coffeeBackground,
@@ -84,8 +104,7 @@ class _StaffScreenState extends State<StaffScreen>
             if (widget.currentUser != null) ...[
               const SizedBox(width: 10),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: widget.currentUser!.role == AccountRole.admin
                       ? AromaColors.coffeeGold.withOpacity(0.9)
@@ -133,14 +152,25 @@ class _StaffScreenState extends State<StaffScreen>
         ],
         bottom: TabBar(
           controller: _tabController,
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
+          labelStyle: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
           indicatorColor: AromaColors.coffeeGold,
           indicatorWeight: 3,
-          tabs: const [
-            Tab(icon: Icon(Icons.receipt_long), text: "ĐƠN ORDER ĐỂ NẤU"),
-            Tab(icon: Icon(Icons.restaurant_menu), text: "QUẢN LÝ MENU"),
-            Tab(icon: Icon(Icons.table_restaurant), text: "QUẢN LÝ BÀN"),
+          tabs: [
+            const Tab(icon: Icon(Icons.receipt_long), text: "ĐƠN ORDER"),
+            const Tab(icon: Icon(Icons.restaurant_menu), text: "MENU"),
+            const Tab(icon: Icon(Icons.table_restaurant), text: "BÀN"),
+            if (_isAdmin) const Tab(icon: Icon(Icons.badge), text: "STAFF"),
           ],
         ),
       ),
@@ -155,7 +185,9 @@ class _StaffScreenState extends State<StaffScreen>
             onUpdateTable: widget.onUpdateTable,
             onDeleteTable: widget.onDeleteTable,
             onExportQrCode: widget.onExportQrCode,
+            canAddTables: _isAdmin,
           ),
+          if (_isAdmin) _buildStaffAccountsTab(),
         ],
       ),
     );
@@ -465,7 +497,8 @@ class _StaffScreenState extends State<StaffScreen>
             if (order.status == OrderStatus.pending) ...[
               const SizedBox(height: 8),
               TextButton(
-                onPressed: () => widget.onUpdateOrderStatus(order.orderId, OrderStatus.cancelled),
+                onPressed: () => widget.onUpdateOrderStatus(
+                    order.orderId, OrderStatus.cancelled),
                 style: TextButton.styleFrom(
                   foregroundColor: Colors.redAccent,
                 ),
@@ -496,25 +529,26 @@ class _StaffScreenState extends State<StaffScreen>
                   color: AromaColors.coffeeTextSub,
                 ),
               ),
-              ElevatedButton.icon(
-                onPressed: () => _showAddMenuItemDialog(context),
-                icon: const Icon(Icons.add, size: 14, color: Colors.white),
-                label: const Text(
-                  "THÊM MÓN MỚI",
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AromaColors.coffeePrimary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+              if (_isAdmin)
+                ElevatedButton.icon(
+                  onPressed: () => _showAddMenuItemDialog(context),
+                  icon: const Icon(Icons.add, size: 14, color: Colors.white),
+                  label: const Text(
+                    "THÊM MÓN MỚI",
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                   ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AromaColors.coffeePrimary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
         ),
@@ -539,7 +573,9 @@ class _StaffScreenState extends State<StaffScreen>
     if (item.imageUrl != null && item.imageUrl!.isNotEmpty) {
       final path = item.imageUrl!;
       final isLocalFile = !path.startsWith('http') &&
-          (path.startsWith('/') || path.contains(':\\\\') || path.contains(':/'));
+          (path.startsWith('/') ||
+              path.contains(':\\\\') ||
+              path.contains(':/'));
       if (isLocalFile) {
         imageProvider = FileImage(File(path));
       } else {
@@ -573,7 +609,8 @@ class _StaffScreenState extends State<StaffScreen>
               ),
               alignment: Alignment.center,
               child: imageProvider == null
-                  ? Text(item.categoryIcon, style: const TextStyle(fontSize: 28))
+                  ? Text(item.categoryIcon,
+                      style: const TextStyle(fontSize: 28))
                   : null,
             ),
             const SizedBox(width: 14),
@@ -634,29 +671,314 @@ class _StaffScreenState extends State<StaffScreen>
                 // Availability toggle
                 Switch(
                   value: item.isAvailable,
-                  onChanged: (valu) => widget.onToggleAvailability(item.menuItemId),
+                  onChanged: (valu) =>
+                      widget.onToggleAvailability(item.menuItemId),
                   activeColor: AromaColors.coffeePrimary,
                   activeTrackColor: AromaColors.coffeeSecondary,
                 ),
-                // Edit Dialog
+                if (_isAdmin) ...[
+                  // Edit Dialog
+                  IconButton(
+                    onPressed: () => _showEditMenuItemDialog(context, item),
+                    icon: const Icon(
+                      Icons.edit,
+                      size: 18,
+                      color: AromaColors.coffeePrimary,
+                    ),
+                    tooltip: "Sửa món",
+                  ),
+                  // Delete
+                  IconButton(
+                    onPressed: () => widget.onDeleteMenuItem(item.menuItemId),
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      size: 18,
+                      color: Colors.redAccent,
+                    ),
+                    tooltip: "Xóa món",
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- TAB 4: Staff account management ---
+  String _formatAccountDate(DateTime? value) {
+    if (value == null) return "--";
+    return "${value.day.toString().padLeft(2, '0')}/"
+        "${value.month.toString().padLeft(2, '0')}/"
+        "${value.year}";
+  }
+
+  Widget _buildAccountMeta(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.bold,
+            color: AromaColors.coffeeTextSub,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value.isEmpty ? "--" : value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: AromaColors.coffeeTextDark,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReadonlyApiField(String label, String value) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AromaColors.coffeeCardLightBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AromaColors.coffeeCardBorder),
+      ),
+      child: _buildAccountMeta(label, value),
+    );
+  }
+
+  Widget _buildStaffAccountsTab() {
+    final staffAccounts = widget.staffAccounts
+        .where((account) => account.role == AccountRole.staff)
+        .toList();
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "TỔNG CỘNG: ${staffAccounts.length} STAFF",
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: AromaColors.coffeeTextSub,
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: () => _showAddStaffDialog(context),
+                icon: const Icon(Icons.person_add, size: 14),
+                label: const Text(
+                  "THÊM STAFF",
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AromaColors.coffeePrimary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: staffAccounts.isEmpty
+              ? const Center(
+                  child: Text(
+                    "Chưa có tài khoản staff",
+                    style: TextStyle(
+                      color: AromaColors.coffeeTextSub,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                )
+              : ListView.separated(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  itemCount: staffAccounts.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    return _buildStaffAccountCard(staffAccounts[index]);
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStaffAccountCard(AccountModel account) {
+    final statusColor =
+        account.isActive ? AromaColors.successGreen : Colors.redAccent;
+
+    return Card(
+      elevation: 2,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AromaColors.coffeeCardBorder),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: statusColor.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.badge,
+                color: statusColor,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    account.fullName.isNotEmpty
+                        ? account.fullName
+                        : account.username,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: AromaColors.coffeeTextDark,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    "@${account.username}",
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AromaColors.coffeeTextSub,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AromaColors.coffeeSecondary,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          "ID ${account.accountId}",
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: AromaColors.coffeePrimary,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AromaColors.coffeeSecondary,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          "ROLE ${account.role.value}",
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: AromaColors.coffeePrimary,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: statusColor.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          account.isActive ? "ACTIVE" : "INACTIVE",
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: statusColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  _buildAccountMeta("EMAIL", account.email),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildAccountMeta(
+                          "PHONE",
+                          account.phoneNumber ?? "",
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildAccountMeta(
+                          "CREATED",
+                          _formatAccountDate(account.createdAt),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildAccountMeta(
+                          "LAST LOGIN",
+                          _formatAccountDate(account.lastLoginAt),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              children: [
                 IconButton(
-                  onPressed: () => _showEditMenuItemDialog(context, item),
+                  onPressed: () => _showEditStaffDialog(context, account),
                   icon: const Icon(
                     Icons.edit,
-                    size: 18,
                     color: AromaColors.coffeePrimary,
-                  ),
-                  tooltip: "Sửa món",
-                ),
-                // Delete
-                IconButton(
-                  onPressed: () => widget.onDeleteMenuItem(item.menuItemId),
-                  icon: const Icon(
-                    Icons.delete_outline,
                     size: 18,
-                    color: Colors.redAccent,
                   ),
-                  tooltip: "Xóa món",
+                  tooltip: "Sửa staff",
+                ),
+                IconButton(
+                  onPressed: account.isActive
+                      ? () => _confirmDeleteStaff(context, account)
+                      : null,
+                  icon: Icon(
+                    Icons.delete_outline,
+                    color: account.isActive ? Colors.redAccent : Colors.grey,
+                    size: 18,
+                  ),
+                  tooltip: "Xóa staff",
                 ),
               ],
             ),
@@ -666,8 +988,288 @@ class _StaffScreenState extends State<StaffScreen>
     );
   }
 
+  void _showAddStaffDialog(BuildContext context) {
+    final usernameController = TextEditingController();
+    final emailController = TextEditingController();
+    final passwordController = TextEditingController();
+    final fullNameController = TextEditingController();
+    final phoneController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text(
+            "Thêm Staff Mới",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: AromaColors.coffeeTextDark,
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildReadonlyApiField("role", "2 (Staff mặc định)"),
+                const SizedBox(height: 10),
+                _buildTextField(usernameController, "username"),
+                const SizedBox(height: 10),
+                _buildTextField(emailController, "email"),
+                const SizedBox(height: 10),
+                _buildTextField(
+                  passwordController,
+                  "password",
+                  obscureText: true,
+                ),
+                const SizedBox(height: 10),
+                _buildTextField(fullNameController, "fullName"),
+                const SizedBox(height: 10),
+                _buildTextField(phoneController, "phoneNumber"),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Hủy", style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (usernameController.text.trim().isEmpty ||
+                    emailController.text.trim().isEmpty ||
+                    passwordController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content:
+                          Text("Vui lòng nhập username, email và mật khẩu"),
+                      backgroundColor: Colors.redAccent,
+                    ),
+                  );
+                  return;
+                }
+
+                final success = await widget.onCreateStaffAccount(
+                  username: usernameController.text.trim(),
+                  email: emailController.text.trim(),
+                  password: passwordController.text.trim(),
+                  fullName: fullNameController.text.trim(),
+                  phoneNumber: phoneController.text.trim(),
+                );
+                if (!context.mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      success
+                          ? "Đã tạo tài khoản staff"
+                          : "Không thể tạo tài khoản staff",
+                    ),
+                    backgroundColor:
+                        success ? AromaColors.successGreen : Colors.redAccent,
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AromaColors.coffeePrimary,
+              ),
+              child: const Text(
+                "Tạo staff",
+                style:
+                    TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showEditStaffDialog(BuildContext context, AccountModel account) {
+    final usernameController = TextEditingController(text: account.username);
+    final emailController = TextEditingController(text: account.email);
+    final fullNameController = TextEditingController(text: account.fullName);
+    final phoneController =
+        TextEditingController(text: account.phoneNumber ?? "");
+    var isActive = account.isActive;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
+              title: const Text(
+                "Cập Nhật Staff",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: AromaColors.coffeeTextDark,
+                ),
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildReadonlyApiField(
+                      "accountId",
+                      account.accountId.toString(),
+                    ),
+                    const SizedBox(height: 10),
+                    _buildReadonlyApiField(
+                      "role",
+                      "${account.role.value} (${account.role.label})",
+                    ),
+                    const SizedBox(height: 10),
+                    _buildTextField(usernameController, "username"),
+                    const SizedBox(height: 10),
+                    _buildTextField(emailController, "email"),
+                    const SizedBox(height: 10),
+                    _buildTextField(fullNameController, "fullName"),
+                    const SizedBox(height: 10),
+                    _buildTextField(phoneController, "phoneNumber"),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildReadonlyApiField(
+                            "createdAt",
+                            _formatAccountDate(account.createdAt),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _buildReadonlyApiField(
+                            "lastLoginAt",
+                            _formatAccountDate(account.lastLoginAt),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text(
+                        "Tài khoản hoạt động",
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: AromaColors.coffeeTextDark,
+                        ),
+                      ),
+                      value: isActive,
+                      activeColor: AromaColors.coffeePrimary,
+                      onChanged: (value) {
+                        setDialogState(() {
+                          isActive = value;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child:
+                      const Text("Hủy", style: TextStyle(color: Colors.grey)),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    final updated = account.copyWith(
+                      username: usernameController.text.trim(),
+                      email: emailController.text.trim(),
+                      fullName: fullNameController.text.trim(),
+                      phoneNumber: phoneController.text.trim(),
+                      isActive: isActive,
+                    );
+                    final success = await widget.onUpdateStaffAccount(updated);
+                    if (!context.mounted) return;
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          success
+                              ? "Đã cập nhật staff"
+                              : "Không thể cập nhật staff",
+                        ),
+                        backgroundColor: success
+                            ? AromaColors.successGreen
+                            : Colors.redAccent,
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AromaColors.coffeePrimary,
+                  ),
+                  child: const Text(
+                    "Lưu",
+                    style: TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _confirmDeleteStaff(BuildContext context, AccountModel account) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text("Xác Nhận Xóa"),
+          content: Text(
+            "Bạn có chắc muốn xóa mềm tài khoản ${account.username}?",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Hủy"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final success =
+                    await widget.onDeleteStaffAccount(account.accountId);
+                if (!context.mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      success
+                          ? "Đã khóa tài khoản staff"
+                          : "Không thể xóa staff",
+                    ),
+                    backgroundColor:
+                        success ? AromaColors.successGreen : Colors.redAccent,
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text(
+                "Xóa",
+                style:
+                    TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   // --- POPUP DIALOGS: ADD MENU ITEM ---
-  Future<void> _pickImage(StateSetter setDialogState, Function(String) onPicked) async {
+  Future<void> _pickImage(
+      StateSetter setDialogState, Function(String) onPicked) async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(
       source: ImageSource.gallery,
@@ -864,8 +1466,11 @@ class _StaffScreenState extends State<StaffScreen>
                   onPressed: () {
                     final p = double.tryParse(priceController.text) ?? 0.0;
                     final newItem = MenuItem(
-                      menuItemId: widget.menuItems.length + 100, // mock ID, DB sẽ tự gen ID
-                      name: nameController.text.isNotEmpty ? nameController.text : "Món mới",
+                      menuItemId: widget.menuItems.length +
+                          100, // mock ID, DB sẽ tự gen ID
+                      name: nameController.text.isNotEmpty
+                          ? nameController.text
+                          : "Món mới",
                       price: p,
                       description: descController.text,
                       category: category,
@@ -996,7 +1601,8 @@ class _StaffScreenState extends State<StaffScreen>
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    final p = double.tryParse(priceController.text) ?? item.price;
+                    final p =
+                        double.tryParse(priceController.text) ?? item.price;
                     final updated = item.copyWith(
                       name: nameController.text,
                       price: p,
@@ -1032,9 +1638,11 @@ class _StaffScreenState extends State<StaffScreen>
     String hint, {
     bool isNumber = false,
     int maxLines = 1,
+    bool obscureText = false,
   }) {
     return TextField(
       controller: ctrl,
+      obscureText: obscureText,
       keyboardType: isNumber
           ? const TextInputType.numberWithOptions(decimal: true)
           : TextInputType.text,

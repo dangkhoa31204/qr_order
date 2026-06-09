@@ -37,6 +37,7 @@ class ApiService {
 
   // In-memory cache for mock data when C# server is offline
   static final List<MenuItem> _mockMenuItems = List.from(initialMenuItems);
+  static bool _hasLoadedServerMenu = false;
   static final List<OrderModel> _mockOrderQueue = [
     OrderModel(
       orderId: 1,
@@ -106,8 +107,7 @@ class ApiService {
           .timeout(const Duration(seconds: 10));
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        final loginResponse =
-            LoginResponse.fromJson(jsonDecode(response.body));
+        final loginResponse = LoginResponse.fromJson(jsonDecode(response.body));
 
         // Lưu JWT token cho các request tiếp theo
         _accessToken = loginResponse.accessToken;
@@ -153,13 +153,168 @@ class ApiService {
   }
 
   // ============================================================
-  // 1. MENU API CALLS
+  // 1. ACCOUNT API CALLS
+  // ============================================================
+  static Future<List<AccountModel>> fetchStaffAccounts() async {
+    // Admin lấy danh sách tất cả tài khoản Staff role 2
+    final result = await _safeGet("/api/Auth/staff");
+    if (result["success"] == true) {
+      final data = result["data"];
+      final List rawList;
+      if (data is List) {
+        rawList = data;
+      } else if (data is Map<String, dynamic> && data["data"] is List) {
+        rawList = data["data"] as List;
+      } else if (data is Map<String, dynamic> && data["accounts"] is List) {
+        rawList = data["accounts"] as List;
+      } else {
+        rawList = const [];
+      }
+
+      return rawList
+          .map((item) => AccountModel.fromJson(item))
+          .where((account) => account.role == AccountRole.staff)
+          .toList();
+    } else {
+      print(
+        "ApiService.fetchStaffAccounts failed: ${result["error"]}. Utilizing mock fallback.",
+      );
+      return _mockAccounts
+          .where((account) => account.role == AccountRole.staff)
+          .toList();
+    }
+  }
+
+  static Future<AccountModel?> createStaffAccount({
+    required String username,
+    required String email,
+    required String password,
+    required String fullName,
+    required String phoneNumber,
+  }) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse("$baseUrl/api/Auth/admin-create"),
+            headers: _authHeaders,
+            body: jsonEncode({
+              "username": username,
+              "email": email,
+              "password": password,
+              "fullName": fullName,
+              "phoneNumber": phoneNumber,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final newAccount = AccountModel.fromJson(jsonDecode(response.body));
+        // Chỉ thêm vào mock nếu thành công thật sự từ server
+        _mockAccounts.add(newAccount);
+        return newAccount;
+      }
+      
+      print("Tạo Staff thất bại: ${response.statusCode} - ${response.body}");
+      return null;
+    } catch (e) {
+      print("Lỗi kết nối khi tạo Staff: $e");
+      if (useMockFallback) {
+        int maxId = 0;
+        for (var account in _mockAccounts) {
+          if (account.accountId > maxId) maxId = account.accountId;
+        }
+        final mockAccount = AccountModel(
+          accountId: maxId + 1,
+          username: username,
+          email: email,
+          passwordHash: password,
+          fullName: fullName,
+          phoneNumber: phoneNumber,
+          role: AccountRole.staff,
+        );
+        _mockAccounts.add(mockAccount);
+        return mockAccount;
+      }
+      return null;
+    }
+  }
+
+  static Future<AccountModel?> updateAccount(AccountModel account) async {
+    final idx =
+        _mockAccounts.indexWhere((it) => it.accountId == account.accountId);
+    if (idx != -1) {
+      _mockAccounts[idx] = account;
+    }
+
+    try {
+      final response = await http
+          .put(
+            Uri.parse("$baseUrl/api/Auth/accounts/${account.accountId}"),
+            headers: _authHeaders,
+            body: jsonEncode({
+              "username": account.username,
+              "email": account.email,
+              "fullName": account.fullName,
+              "phoneNumber": account.phoneNumber ?? "",
+              "isActive": account.isActive,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return AccountModel.fromJson(jsonDecode(response.body));
+      }
+      return null;
+    } catch (_) {
+      return useMockFallback ? account : null;
+    }
+  }
+
+  static Future<bool> deleteAccount(int accountId) async {
+    final idx = _mockAccounts.indexWhere((it) => it.accountId == accountId);
+    if (idx != -1) {
+      _mockAccounts[idx] = _mockAccounts[idx].copyWith(isActive: false);
+    }
+
+    try {
+      final response = await http
+          .delete(
+            Uri.parse("$baseUrl/api/Auth/accounts/$accountId"),
+            headers: _authHeaders,
+          )
+          .timeout(const Duration(seconds: 10));
+      return response.statusCode >= 200 && response.statusCode < 300;
+    } catch (_) {
+      return useMockFallback;
+    }
+  }
+
+  // ============================================================
+  // 2. MENU API CALLS
   // ============================================================
   static Future<List<MenuItem>> fetchMenuItems() async {
-    final result = await _safeGet("/api/Menu");
+    // Lấy tất cả món trong hệ thống, bao gồm món đã ẩn. Chỉ Admin được truy cập.
+    final result = await _safeGet("/api/Menu/all");
     if (result["success"] == true) {
       final List rawList = result["data"];
-      return rawList.map((item) => MenuItem.fromJson(item)).toList();
+      final serverItems =
+          rawList.map((item) => MenuItem.fromJson(item)).toList();
+
+      if (!_hasLoadedServerMenu) {
+        _mockMenuItems.clear();
+        _hasLoadedServerMenu = true;
+      }
+
+      for (final item in serverItems) {
+        final idx =
+            _mockMenuItems.indexWhere((it) => it.menuItemId == item.menuItemId);
+        if (idx != -1) {
+          _mockMenuItems[idx] = item;
+        } else {
+          _mockMenuItems.add(item);
+        }
+      }
+
+      return List<MenuItem>.from(_mockMenuItems);
     } else {
       print(
         "ApiService.fetchMenuItems failed: ${result["error"]}. Utilizing mock fallback.",
@@ -188,7 +343,8 @@ class ApiService {
 
   static Future<bool> updateMenuItem(MenuItem item) async {
     // Modify local mock list as fallback
-    final idx = _mockMenuItems.indexWhere((it) => it.menuItemId == item.menuItemId);
+    final idx =
+        _mockMenuItems.indexWhere((it) => it.menuItemId == item.menuItemId);
     if (idx != -1) {
       _mockMenuItems[idx] = item;
     }

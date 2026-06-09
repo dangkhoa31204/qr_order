@@ -57,6 +57,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
           (it) => it.menuItemId == itemId,
           orElse: () => initialMenuItems.first,
         );
+        if (!item.isAvailable) return;
         subtotal += item.price * qty;
         totalItemsCount += qty;
         cartItems.add(OrderItemModel(
@@ -73,6 +74,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
 
     // Menu filtering
     final filteredItems = widget.menuItems.where((item) {
+      if (!item.isAvailable) return false;
       final matchesCategory =
           _activeCategory == null || item.category == _activeCategory;
       final matchesSearch =
@@ -204,10 +206,12 @@ class _CustomerScreenState extends State<CustomerScreen> {
                 scrollDirection: Axis.horizontal,
                 itemCount: CategoryType.values.length + 1,
                 itemBuilder: (context, index) {
-                  CategoryType? cat = index == 0 ? null : CategoryType.values[index - 1];
+                  CategoryType? cat =
+                      index == 0 ? null : CategoryType.values[index - 1];
                   final isSelected = cat == _activeCategory;
 
-                  String displayLabel = cat == null ? "Tất cả" : "${cat.label} ${cat.icon}";
+                  String displayLabel =
+                      cat == null ? "Tất cả" : "${cat.label} ${cat.icon}";
 
                   return Padding(
                     padding: const EdgeInsets.only(right: 8.0),
@@ -332,7 +336,8 @@ class _CustomerScreenState extends State<CustomerScreen> {
 
   Widget _buildItemImage(String path) {
     // Kiểm tra nếu là file local (đường dẫn bắt đầu bằng / hoặc chứa :\)
-    final isLocalFile = !path.startsWith('http') && (path.startsWith('/') || path.contains(':\\'));
+    final isLocalFile = !path.startsWith('http') &&
+        (path.startsWith('/') || path.contains(':\\'));
     if (isLocalFile && File(path).existsSync()) {
       return Image.file(
         File(path),
@@ -346,7 +351,8 @@ class _CustomerScreenState extends State<CustomerScreen> {
         width: 80,
         height: 80,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 32, color: Colors.grey),
+        errorBuilder: (_, __, ___) =>
+            const Icon(Icons.broken_image, size: 32, color: Colors.grey),
       );
     }
     return const Icon(Icons.image_not_supported, size: 32, color: Colors.grey);
@@ -381,7 +387,8 @@ class _CustomerScreenState extends State<CustomerScreen> {
                           borderRadius: BorderRadius.circular(18),
                           child: _buildItemImage(item.imageUrl!),
                         )
-                      : Text(item.categoryIcon, style: const TextStyle(fontSize: 38)),
+                      : Text(item.categoryIcon,
+                          style: const TextStyle(fontSize: 38)),
                 ),
                 if (!item.isAvailable)
                   Container(
@@ -546,7 +553,8 @@ class _CustomerScreenState extends State<CustomerScreen> {
   ) {
     final showCart = totalItems > 0;
     final showTracker = widget.activeOrder != null &&
-        widget.activeOrder!.status != OrderStatus.paid && widget.activeOrder!.status != OrderStatus.cancelled;
+        widget.activeOrder!.status != OrderStatus.paid &&
+        widget.activeOrder!.status != OrderStatus.cancelled;
 
     if (!showCart && !showTracker) return null;
 
@@ -1122,7 +1130,8 @@ class OrderTrackerDialog extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(order.status == OrderStatus.cancelled ? "❌" : "🔥", style: const TextStyle(fontSize: 18)),
+                    Text(order.status == OrderStatus.cancelled ? "❌" : "🔥",
+                        style: const TextStyle(fontSize: 18)),
                     const SizedBox(width: 8),
                     Text(
                       order.status.labelVi.toUpperCase(),
@@ -1171,7 +1180,8 @@ class OrderTrackerDialog extends StatelessWidget {
                 const Center(
                   child: Text(
                     "Đơn hàng này đã bị hủy.",
-                    style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        color: Colors.redAccent, fontWeight: FontWeight.bold),
                   ),
                 )
               ],
