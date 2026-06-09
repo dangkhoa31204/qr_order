@@ -230,7 +230,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                     height: 280,
                     child: FutureBuilder<Uint8List?>(
                       future:
-                          QrCodeGenerator.generateQrCode("table_${table.tableId}"),
+                          QrCodeGenerator.generateTableQrCode(table.tableId),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
@@ -257,6 +257,23 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                     color: AromaColors.coffeeTextSub,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AromaColors.coffeeSecondary,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: SelectableText(
+                    QrCodeGenerator.getOrderUrl(table.tableId),
+                    style: const TextStyle(
+                      color: AromaColors.coffeePrimary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
                 const SizedBox(height: 24),

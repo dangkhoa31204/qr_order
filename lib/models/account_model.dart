@@ -106,6 +106,46 @@ class AccountModel {
   }
 }
 
+/// Model phản hồi từ API /api/Auth/login
+/// Khớp với LoginResponse schema từ Swagger
+class LoginResponse {
+  final String accessToken;
+  final DateTime expiresAt;
+  final String username;
+  final int role;
+
+  LoginResponse({
+    required this.accessToken,
+    required this.expiresAt,
+    required this.username,
+    required this.role,
+  });
+
+  factory LoginResponse.fromJson(Map<String, dynamic> json) {
+    return LoginResponse(
+      accessToken: json['accessToken']?.toString() ?? '',
+      expiresAt: json['expiresAt'] != null
+          ? DateTime.tryParse(json['expiresAt'].toString()) ?? DateTime.now()
+          : DateTime.now(),
+      username: json['username']?.toString() ?? '',
+      role: json['role'] as int? ?? 2,
+    );
+  }
+
+  /// Chuyển LoginResponse thành AccountModel để sử dụng trong app
+  AccountModel toAccountModel() {
+    return AccountModel(
+      accountId: 0,
+      username: username,
+      email: '',
+      passwordHash: '',
+      fullName: username,
+      role: AccountRole.fromInt(role),
+      lastLoginAt: DateTime.now(),
+    );
+  }
+}
+
 /// Seed admin account khớp DB
 final AccountModel seedAdmin = AccountModel(
   accountId: 1,

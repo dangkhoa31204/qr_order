@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../constants.dart';
 import '../models/item_model.dart';
+import '../models/account_model.dart';
 import 'table_management_screen.dart';
 
 class StaffScreen extends StatefulWidget {
@@ -18,6 +19,7 @@ class StaffScreen extends StatefulWidget {
   final Function(TableModel) onUpdateTable;
   final Function(int) onDeleteTable;
   final Function(TableModel) onExportQrCode;
+  final AccountModel? currentUser;
   final VoidCallback onBackToGateway;
 
   const StaffScreen({
@@ -34,6 +36,7 @@ class StaffScreen extends StatefulWidget {
     required this.onUpdateTable,
     required this.onDeleteTable,
     required this.onExportQrCode,
+    this.currentUser,
     required this.onBackToGateway,
   });
 
@@ -68,18 +71,60 @@ class _StaffScreenState extends State<StaffScreen>
     return Scaffold(
       backgroundColor: AromaColors.coffeeBackground,
       appBar: AppBar(
-        title: const Text(
-          "Staff Dashboard",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-            color: Colors.white,
-          ),
+        title: Row(
+          children: [
+            const Text(
+              "Staff Dashboard",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                color: Colors.white,
+              ),
+            ),
+            if (widget.currentUser != null) ...[
+              const SizedBox(width: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: widget.currentUser!.role == AccountRole.admin
+                      ? AromaColors.coffeeGold.withOpacity(0.9)
+                      : Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  widget.currentUser!.role.label.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: widget.currentUser!.role == AccountRole.admin
+                        ? AromaColors.coffeeTextDark
+                        : Colors.white,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
         centerTitle: false,
         backgroundColor: AromaColors.coffeePrimary,
         elevation: 0,
         actions: [
+          if (widget.currentUser != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: Center(
+                child: Text(
+                  widget.currentUser!.username,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
           IconButton(
             onPressed: widget.onBackToGateway,
             icon: const Icon(Icons.logout, color: Colors.white, size: 20),

@@ -5,6 +5,16 @@ import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
 
 class QrCodeGenerator {
+  /// Base URL cho trang order khách hàng (trỏ về root path của frontend)
+  /// Khi khách quét QR sẽ mở link này kèm tableId
+  static const String orderBaseUrl = "https://qr-order-api.onrender.com";
+
+  /// Tạo URL order cho bàn cụ thể
+  static String getOrderUrl(int tableId) {
+    return "$orderBaseUrl/?tableId=$tableId";
+  }
+
+  /// Generate QR code image bytes từ dữ liệu bất kỳ
   static Future<Uint8List?> generateQrCode(String data) async {
     try {
       final qrValidationResult = QrValidator.validate(
@@ -30,10 +40,17 @@ class QrCodeGenerator {
     return null;
   }
 
+  /// Generate QR code chứa URL order cho bàn
+  static Future<Uint8List?> generateTableQrCode(int tableId) async {
+    final url = getOrderUrl(tableId);
+    return generateQrCode(url);
+  }
+
   static Future<bool> saveQrCode(String tableId, String tableLabel) async {
     try {
-      // Generate QR code
-      final qrImageData = await generateQrCode("table_$tableId");
+      // Generate QR code với URL order thay vì plain text
+      final parsedId = int.tryParse(tableId) ?? 0;
+      final qrImageData = await generateTableQrCode(parsedId);
 
       if (qrImageData == null) {
         print("Failed to generate QR code image");
@@ -61,7 +78,7 @@ class QrCodeGenerator {
       // Create filename with timestamp
       final timestamp =
           DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now());
-      final filename = 'QR_${tableLabel}_${timestamp}.png';
+      final filename = 'QR_${tableLabel}_$timestamp.png';
       final filePath = '${downloadsDir.path}/$filename';
 
       // Save file

@@ -1,14 +1,28 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'constants.dart';
 import 'models/item_model.dart';
 import 'models/account_model.dart';
 import 'services/api_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/staff_screen.dart';
+import 'customer_main.dart'; // Thêm để chạy luồng Customer khi cần
 
 void main() {
-  runApp(const AromaBistroApp());
+  int? webTableId;
+  if (kIsWeb) {
+    final uri = Uri.base;
+    webTableId = int.tryParse(uri.queryParameters['tableId'] ?? '');
+  }
+
+  if (webTableId != null) {
+    // Nếu có tableId trên URL, chạy luôn ứng dụng gọi món của khách
+    runApp(CustomerApp(tableId: webTableId));
+  } else {
+    // Nếu không có, chạy ứng dụng chính (Admin / Staff)
+    runApp(const AromaBistroApp());
+  }
 }
 
 class AromaBistroApp extends StatelessWidget {
@@ -184,6 +198,13 @@ class _MainGateScreenState extends State<MainGateScreen> {
     _loadBackendData();
   }
 
+  UserRole get _currentRole {
+    if (_currentUser == null) return UserRole.staff;
+    return _currentUser!.role == AccountRole.admin
+        ? UserRole.admin
+        : UserRole.staff;
+  }
+
   // --- POPUPS & API OPTION DIALOG ---
   void _showConfigureApiDialog() {
     final controller = TextEditingController(text: ApiService.baseUrl);
@@ -283,7 +304,9 @@ class _MainGateScreenState extends State<MainGateScreen> {
       onUpdateTable: _updateTable,
       onDeleteTable: _deleteTable,
       onExportQrCode: _exportQrCode,
+      currentUser: _currentUser,
       onBackToGateway: () {
+        ApiService.clearToken();
         setState(() {
           _isLoggedIn = false;
           _currentUser = null;

@@ -1,14 +1,20 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'constants.dart';
 import 'models/item_model.dart';
 import 'services/api_service.dart';
 import 'screens/customer_screen.dart';
 
 void main() {
-  // Trong thực tế khi build ra web app, ID bàn có thể lấy từ URL query parameters
-  // Ví dụ: int.tryParse(Uri.base.queryParameters['table'] ?? '8') ?? 8
-  runApp(const CustomerApp(tableId: 8));
+  // Khi build ra web app, lấy tableId từ URL query parameters
+  // Ví dụ: https://qr-order-api.onrender.com/order?tableId=1
+  int tableId = 1; // Giá trị mặc định
+  if (kIsWeb) {
+    final uri = Uri.base;
+    tableId = int.tryParse(uri.queryParameters['tableId'] ?? '') ?? 1;
+  }
+  runApp(CustomerApp(tableId: tableId));
 }
 
 class CustomerApp extends StatelessWidget {

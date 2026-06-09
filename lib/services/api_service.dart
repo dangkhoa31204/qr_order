@@ -4,10 +4,36 @@ import '../models/item_model.dart';
 import '../models/account_model.dart';
 
 class ApiService {
-  // Configurable base URL for C# ASP.NET Core backend
-  // In Android Emulator, http://10.0.2.2:5000 directs to the host machine's localhost
-  static String baseUrl = "http://10.0.2.2:5000";
+  // Configurable base URL — trỏ đến backend Render thật
+  static String baseUrl = "https://prm-backend-igqt.onrender.com";
   static bool useMockFallback = true; // Toggle fallback when server is offline
+
+  // JWT Token lưu sau khi login thành công
+  static String? _accessToken;
+  static DateTime? _tokenExpiresAt;
+
+  /// Kiểm tra token còn hạn hay không
+  static bool get isTokenValid {
+    if (_accessToken == null || _tokenExpiresAt == null) return false;
+    return DateTime.now().isBefore(_tokenExpiresAt!);
+  }
+
+  /// Lấy header Authorization với Bearer token
+  static Map<String, String> get _authHeaders {
+    final headers = <String, String>{
+      "Content-Type": "application/json",
+    };
+    if (_accessToken != null && _accessToken!.isNotEmpty) {
+      headers["Authorization"] = "Bearer $_accessToken";
+    }
+    return headers;
+  }
+
+  /// Xóa token khi logout
+  static void clearToken() {
+    _accessToken = null;
+    _tokenExpiresAt = null;
+  }
 
   // In-memory cache for mock data when C# server is offline
   static final List<MenuItem> _mockMenuItems = List.from(initialMenuItems);
@@ -45,8 +71,8 @@ class ApiService {
   static Future<Map<String, dynamic>> _safeGet(String path) async {
     try {
       final response = await http
-          .get(Uri.parse("$baseUrl$path"))
-          .timeout(const Duration(seconds: 3));
+          .get(Uri.parse("$baseUrl$path"), headers: _authHeaders)
+          .timeout(const Duration(seconds: 10));
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return {"success": true, "data": jsonDecode(response.body)};
       }
@@ -59,34 +85,78 @@ class ApiService {
     }
   }
 
-  // 0. AUTH API CALLS
-  static Future<AccountModel?> login(String username, String password) async {
+  // ============================================================
+  // 0. AUTH API CALLS — JWT Authentication
+  // ============================================================
+
+  /// Login bằng API thật: POST /api/Auth/login
+  /// Request body: { "usernameOrEmail": "...", "password": "..." }
+  /// Response: LoginResponse { accessToken, expiresAt, username, role }
+  static Future<LoginResult> login(String username, String password) async {
     try {
       final response = await http
           .post(
-            Uri.parse("$baseUrl/api/auth/login"),
+            Uri.parse("$baseUrl/api/Auth/login"),
             headers: {"Content-Type": "application/json"},
-            body: jsonEncode({"username": username, "password": password}),
+            body: jsonEncode({
+              "usernameOrEmail": username,
+              "password": password,
+            }),
           )
-          .timeout(const Duration(seconds: 3));
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        return AccountModel.fromJson(jsonDecode(response.body));
-      }
-    } catch (_) {}
+          .timeout(const Duration(seconds: 10));
 
-    // Mock fallback
-    if (useMockFallback) {
-      final match = _mockAccounts.where(
-        (a) => a.username == username && (a.passwordHash == password || password == '12345'),
-      );
-      if (match.isNotEmpty) return match.first;
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final loginResponse =
+            LoginResponse.fromJson(jsonDecode(response.body));
+
+        // Lưu JWT token cho các request tiếp theo
+        _accessToken = loginResponse.accessToken;
+        _tokenExpiresAt = loginResponse.expiresAt;
+
+        final account = loginResponse.toAccountModel();
+        return LoginResult.success(account);
+      } else if (response.statusCode == 401) {
+        return LoginResult.failure(
+            "Tên đăng nhập hoặc mật khẩu không chính xác");
+      } else if (response.statusCode == 400) {
+        // Thử parse message lỗi từ server
+        try {
+          final body = jsonDecode(response.body);
+          final message = body['message']?.toString() ??
+              body['title']?.toString() ??
+              "Thông tin đăng nhập không hợp lệ";
+          return LoginResult.failure(message);
+        } catch (_) {
+          return LoginResult.failure("Thông tin đăng nhập không hợp lệ");
+        }
+      } else {
+        return LoginResult.failure(
+            "Lỗi máy chủ (${response.statusCode}). Vui lòng thử lại sau.");
+      }
+    } catch (e) {
+      // Không kết nối được server → thử mock fallback
+      if (useMockFallback) {
+        final match = _mockAccounts.where(
+          (a) =>
+              a.username == username &&
+              (a.passwordHash == password || password == '12345'),
+        );
+        if (match.isNotEmpty) {
+          return LoginResult.success(match.first);
+        }
+        return LoginResult.failure(
+            "Tên đăng nhập hoặc mật khẩu không chính xác (chế độ offline)");
+      }
+      return LoginResult.failure(
+          "Không thể kết nối tới máy chủ.\nVui lòng kiểm tra kết nối mạng.");
     }
-    return null;
   }
 
+  // ============================================================
   // 1. MENU API CALLS
+  // ============================================================
   static Future<List<MenuItem>> fetchMenuItems() async {
-    final result = await _safeGet("/api/menu");
+    final result = await _safeGet("/api/Menu");
     if (result["success"] == true) {
       final List rawList = result["data"];
       return rawList.map((item) => MenuItem.fromJson(item)).toList();
@@ -105,11 +175,11 @@ class ApiService {
     try {
       final response = await http
           .post(
-            Uri.parse("$baseUrl/api/menu"),
-            headers: {"Content-Type": "application/json"},
+            Uri.parse("$baseUrl/api/Menu"),
+            headers: _authHeaders,
             body: jsonEncode(item.toJson()),
           )
-          .timeout(const Duration(seconds: 3));
+          .timeout(const Duration(seconds: 10));
       return response.statusCode >= 200 && response.statusCode < 300;
     } catch (_) {
       return useMockFallback; // fallback success
@@ -126,11 +196,11 @@ class ApiService {
     try {
       final response = await http
           .put(
-            Uri.parse("$baseUrl/api/menu/${item.menuItemId}"),
-            headers: {"Content-Type": "application/json"},
+            Uri.parse("$baseUrl/api/Menu/${item.menuItemId}"),
+            headers: _authHeaders,
             body: jsonEncode(item.toJson()),
           )
-          .timeout(const Duration(seconds: 3));
+          .timeout(const Duration(seconds: 10));
       return response.statusCode >= 200 && response.statusCode < 300;
     } catch (_) {
       return useMockFallback;
@@ -142,8 +212,11 @@ class ApiService {
 
     try {
       final response = await http
-          .delete(Uri.parse("$baseUrl/api/menu/$menuItemId"))
-          .timeout(const Duration(seconds: 3));
+          .delete(
+            Uri.parse("$baseUrl/api/Menu/$menuItemId"),
+            headers: _authHeaders,
+          )
+          .timeout(const Duration(seconds: 10));
       return response.statusCode >= 200 && response.statusCode < 300;
     } catch (_) {
       return useMockFallback;
@@ -161,17 +234,22 @@ class ApiService {
 
     try {
       final response = await http
-          .patch(Uri.parse("$baseUrl/api/menu/$menuItemId/toggle-availability"))
-          .timeout(const Duration(seconds: 3));
+          .patch(
+            Uri.parse("$baseUrl/api/Menu/$menuItemId/toggle-availability"),
+            headers: _authHeaders,
+          )
+          .timeout(const Duration(seconds: 10));
       return response.statusCode >= 200 && response.statusCode < 300;
     } catch (_) {
       return useMockFallback;
     }
   }
 
+  // ============================================================
   // 2. ORDER QUEUE API CALLS
+  // ============================================================
   static Future<List<OrderModel>> fetchOrderQueue() async {
-    final result = await _safeGet("/api/orders");
+    final result = await _safeGet("/api/Orders");
     if (result["success"] == true) {
       final List rawList = result["data"];
       return rawList.map((item) => OrderModel.fromJson(item)).toList();
@@ -189,11 +267,11 @@ class ApiService {
     try {
       final response = await http
           .post(
-            Uri.parse("$baseUrl/api/orders"),
-            headers: {"Content-Type": "application/json"},
+            Uri.parse("$baseUrl/api/Orders"),
+            headers: _authHeaders,
             body: jsonEncode(order.toJson()),
           )
-          .timeout(const Duration(seconds: 3));
+          .timeout(const Duration(seconds: 10));
       return response.statusCode >= 200 && response.statusCode < 300;
     } catch (_) {
       return useMockFallback;
@@ -212,22 +290,24 @@ class ApiService {
     try {
       final response = await http
           .put(
-            Uri.parse("$baseUrl/api/orders/$orderId/status"),
-            headers: {"Content-Type": "application/json"},
+            Uri.parse("$baseUrl/api/Orders/$orderId/status"),
+            headers: _authHeaders,
             body: jsonEncode({"status": status.value}),
           )
-          .timeout(const Duration(seconds: 3));
+          .timeout(const Duration(seconds: 10));
       return response.statusCode >= 200 && response.statusCode < 300;
     } catch (_) {
       return useMockFallback;
     }
   }
 
+  // ============================================================
   // 3. TABLE API CALLS
+  // ============================================================
   static final List<TableModel> _mockTables = List.from(systemTables);
 
   static Future<List<TableModel>> fetchTables() async {
-    final result = await _safeGet("/api/tables");
+    final result = await _safeGet("/api/Tables");
     if (result["success"] == true) {
       final List rawList = result["data"];
       return rawList.map((item) => TableModel.fromJson(item)).toList();
@@ -245,11 +325,11 @@ class ApiService {
     try {
       final response = await http
           .post(
-            Uri.parse("$baseUrl/api/tables"),
-            headers: {"Content-Type": "application/json"},
+            Uri.parse("$baseUrl/api/Tables"),
+            headers: _authHeaders,
             body: jsonEncode(table.toJson()),
           )
-          .timeout(const Duration(seconds: 3));
+          .timeout(const Duration(seconds: 10));
       return response.statusCode >= 200 && response.statusCode < 300;
     } catch (_) {
       return useMockFallback;
@@ -265,11 +345,11 @@ class ApiService {
     try {
       final response = await http
           .put(
-            Uri.parse("$baseUrl/api/tables/${table.tableId}"),
-            headers: {"Content-Type": "application/json"},
+            Uri.parse("$baseUrl/api/Tables/${table.tableId}"),
+            headers: _authHeaders,
             body: jsonEncode(table.toJson()),
           )
-          .timeout(const Duration(seconds: 3));
+          .timeout(const Duration(seconds: 10));
       return response.statusCode >= 200 && response.statusCode < 300;
     } catch (_) {
       return useMockFallback;
@@ -281,11 +361,35 @@ class ApiService {
 
     try {
       final response = await http
-          .delete(Uri.parse("$baseUrl/api/tables/$tableId"))
-          .timeout(const Duration(seconds: 3));
+          .delete(
+            Uri.parse("$baseUrl/api/Tables/$tableId"),
+            headers: _authHeaders,
+          )
+          .timeout(const Duration(seconds: 10));
       return response.statusCode >= 200 && response.statusCode < 300;
     } catch (_) {
       return useMockFallback;
     }
+  }
+}
+
+/// Kết quả login: thành công hoặc thất bại kèm message chi tiết
+class LoginResult {
+  final bool isSuccess;
+  final AccountModel? account;
+  final String? errorMessage;
+
+  LoginResult._({
+    required this.isSuccess,
+    this.account,
+    this.errorMessage,
+  });
+
+  factory LoginResult.success(AccountModel account) {
+    return LoginResult._(isSuccess: true, account: account);
+  }
+
+  factory LoginResult.failure(String message) {
+    return LoginResult._(isSuccess: false, errorMessage: message);
   }
 }
