@@ -33,6 +33,16 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
     _tables = List.from(widget.tables);
   }
 
+  @override
+  void didUpdateWidget(covariant TableManagementScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.tables != oldWidget.tables) {
+      setState(() {
+        _tables = List.from(widget.tables);
+      });
+    }
+  }
+
   void _showAddTableDialog() {
     final idController = TextEditingController();
     final capacityController = TextEditingController(text: '4');
@@ -170,6 +180,172 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                   ),
                   child: const Text(
                     "Thêm",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }
+        );
+      },
+    );
+  }
+
+  void _showEditTableDialog(TableModel table) {
+    final capacityController = TextEditingController(text: table.capacity.toString());
+    TableStatus status = table.status;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape:
+                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Row(
+                children: [
+                  const Text(
+                    "✏️",
+                    style: TextStyle(fontSize: 24),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    "Sửa ${table.label}",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: AromaColors.coffeeTextDark,
+                    ),
+                  ),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // ID bàn chỉ hiển thị, không cho sửa
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AromaColors.coffeeSecondary,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AromaColors.coffeeCardBorder),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.tag, size: 18, color: AromaColors.coffeeTextSub),
+                          const SizedBox(width: 8),
+                          Text(
+                            "ID Bàn: ${table.tableId}",
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AromaColors.coffeeTextDark,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: capacityController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: "Sức chứa (số lượng khách)",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.all(12),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<TableStatus>(
+                      value: status,
+                      decoration: InputDecoration(
+                        labelText: "Trạng thái",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.all(12),
+                      ),
+                      items: TableStatus.values.map((s) {
+                        return DropdownMenuItem(
+                          value: s,
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 10,
+                                height: 10,
+                                decoration: BoxDecoration(
+                                  color: s.color,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(s.label),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setDialogState(() {
+                            status = val;
+                          });
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    "Hủy",
+                    style: TextStyle(color: AromaColors.coffeeTextSub),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final capacity = int.tryParse(capacityController.text.trim()) ?? table.capacity;
+
+                    final updatedTable = table.copyWith(
+                      capacity: capacity,
+                      status: status,
+                    );
+
+                    widget.onUpdateTable(updatedTable);
+                    setState(() {
+                      final idx = _tables.indexWhere((t) => t.tableId == table.tableId);
+                      if (idx != -1) {
+                        _tables[idx] = updatedTable;
+                      }
+                    });
+
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          "✅ Đã cập nhật ${updatedTable.label} thành công",
+                        ),
+                        backgroundColor: AromaColors.successGreen,
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AromaColors.coffeePrimary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: const Text(
+                    "Lưu",
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -534,6 +710,14 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                   ),
                                   onPressed: () => _showQrPreview(table),
                                   tooltip: "Xem & Tải QR",
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.edit,
+                                    color: AromaColors.preparingBlue,
+                                  ),
+                                  onPressed: () => _showEditTableDialog(table),
+                                  tooltip: "Sửa bàn",
                                 ),
                                 IconButton(
                                   icon: const Icon(
