@@ -56,7 +56,7 @@ class ApiService {
           menuItemRef: initialMenuItems.firstWhere((it) => it.menuItemId == 2),
         ),
       ],
-      status: OrderStatus.preparing,
+      status: OrderStatus.confirmed,
       totalAmount: 120000,
       note: "Latte ít đường, Espresso nóng",
     ),
@@ -445,7 +445,7 @@ class ApiService {
 
     try {
       final response = await http
-          .put(
+          .patch(
             Uri.parse("$baseUrl/api/Orders/$orderId/status"),
             headers: _authHeaders,
             body: jsonEncode({"status": status.value}),

@@ -233,7 +233,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<TableStatus>(
-                    value: status,
+                    initialValue: status,
                     decoration: InputDecoration(
                       labelText: "Trạng thái",
                       border: OutlineInputBorder(
@@ -662,7 +662,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                     ),
                                     decoration: BoxDecoration(
                                       color:
-                                          table.status.color.withOpacity(0.1),
+                                          table.status.color.withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(

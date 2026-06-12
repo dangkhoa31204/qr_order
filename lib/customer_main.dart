@@ -33,7 +33,7 @@ class CustomerApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(
           seedColor: AromaColors.coffeePrimary,
           primary: AromaColors.coffeePrimary,
-          background: AromaColors.coffeeBackground,
+          surface: AromaColors.coffeeBackground,
         ),
         fontFamily: 'Serif',
       ),
@@ -123,7 +123,7 @@ class _CustomerMainScreenState extends State<CustomerMainScreen> {
         (o) => o.orderId == _activeCustomerOrder!.orderId,
         orElse: () => _activeCustomerOrder!,
       );
-      if (updated.status == OrderStatus.paid ||
+      if (updated.status == OrderStatus.completed ||
           updated.status == OrderStatus.cancelled) {
         _activeCustomerOrder = null; // cleared when paid or cancelled
       } else {
@@ -134,7 +134,7 @@ class _CustomerMainScreenState extends State<CustomerMainScreen> {
       final tableActiveOrders = _orderQueue
           .where((o) =>
               o.tableId == widget.tableId &&
-              o.status != OrderStatus.paid &&
+              o.status != OrderStatus.completed &&
               o.status != OrderStatus.cancelled)
           .toList();
       if (tableActiveOrders.isNotEmpty) {

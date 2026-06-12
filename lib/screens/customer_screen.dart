@@ -395,7 +395,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
+                      color: Colors.black.withValues(alpha: 0.6),
                       borderRadius: BorderRadius.circular(18),
                     ),
                     alignment: Alignment.center,
@@ -553,7 +553,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
   ) {
     final showCart = totalItems > 0;
     final showTracker = widget.activeOrder != null &&
-        widget.activeOrder!.status != OrderStatus.paid &&
+        widget.activeOrder!.status != OrderStatus.completed &&
         widget.activeOrder!.status != OrderStatus.cancelled;
 
     if (!showCart && !showTracker) return null;
@@ -889,7 +889,7 @@ class MainCartSheetContent extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              it.menuItemRef?.name ?? 'Món ăn',
+                              it.menuItemRef?.name ?? it.menuItemName ?? 'Món ăn',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
@@ -909,7 +909,7 @@ class MainCartSheetContent extends StatelessWidget {
                       ),
                       Container(
                         decoration: BoxDecoration(
-                          color: AromaColors.coffeeSecondary.withOpacity(0.5),
+                          color: AromaColors.coffeeSecondary.withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Row(
@@ -1073,9 +1073,9 @@ class OrderTrackerDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     // Stepper index derivation
     int currentStep = 0;
-    if (order.status == OrderStatus.preparing) currentStep = 1;
-    if (order.status == OrderStatus.ready) currentStep = 2;
-    if (order.status == OrderStatus.paid) currentStep = 3;
+    if (order.status == OrderStatus.confirmed) currentStep = 1;
+    if (order.status == OrderStatus.serving) currentStep = 2;
+    if (order.status == OrderStatus.completed) currentStep = 3;
     if (order.status == OrderStatus.cancelled) currentStep = -1;
 
     return Dialog(
@@ -1124,7 +1124,7 @@ class OrderTrackerDialog extends StatelessWidget {
                 alignment: Alignment.center,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: order.status.color.withOpacity(0.12),
+                  color: order.status.color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
@@ -1205,7 +1205,7 @@ class OrderTrackerDialog extends StatelessWidget {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: AromaColors.coffeeCardBorder.withOpacity(0.5),
+                    color: AromaColors.coffeeCardBorder.withValues(alpha: 0.5),
                   ),
                 ),
                 child: Column(
@@ -1217,7 +1217,7 @@ class OrderTrackerDialog extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              "${it.menuItemRef?.categoryIcon ?? '🍽️'} ${it.menuItemRef?.name ?? 'Món ăn'} x${it.quantity}",
+                              "${it.menuItemRef?.categoryIcon ?? '🍽️'} ${it.menuItemRef?.name ?? it.menuItemName ?? 'Món ăn'} x${it.quantity}",
                               style: const TextStyle(
                                 fontSize: 12,
                                 color: AromaColors.coffeeTextDark,
@@ -1300,7 +1300,7 @@ class OrderTrackerDialog extends StatelessWidget {
           decoration: BoxDecoration(
             color: isDone
                 ? AromaColors.successGreen
-                : Colors.grey.withOpacity(0.2),
+                : Colors.grey.withValues(alpha: 0.2),
             shape: BoxShape.circle,
           ),
           alignment: Alignment.center,
@@ -1347,7 +1347,7 @@ class OrderTrackerDialog extends StatelessWidget {
       width: 2,
       height: 12,
       margin: const EdgeInsets.only(left: 11),
-      color: isDone ? AromaColors.successGreen : Colors.grey.withOpacity(0.3),
+      color: isDone ? AromaColors.successGreen : Colors.grey.withValues(alpha: 0.3),
     );
   }
 }

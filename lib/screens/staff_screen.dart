@@ -81,11 +81,11 @@ class _StaffScreenState extends State<StaffScreen>
     // Separate active order vs historic/paid orders
     final activeOrders = widget.orders
         .where((o) =>
-            o.status != OrderStatus.paid && o.status != OrderStatus.cancelled)
+            o.status != OrderStatus.completed && o.status != OrderStatus.cancelled)
         .toList();
     final historicOrders = widget.orders
         .where((o) =>
-            o.status == OrderStatus.paid || o.status == OrderStatus.cancelled)
+            o.status == OrderStatus.completed || o.status == OrderStatus.cancelled)
         .toList();
 
     return Scaffold(
@@ -107,8 +107,8 @@ class _StaffScreenState extends State<StaffScreen>
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: widget.currentUser!.role == AccountRole.admin
-                      ? AromaColors.coffeeGold.withOpacity(0.9)
-                      : Colors.white.withOpacity(0.2),
+                      ? AromaColors.coffeeGold.withValues(alpha: 0.9)
+                      : Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -303,14 +303,14 @@ class _StaffScreenState extends State<StaffScreen>
     String mainActionText = "";
     OrderStatus? nextStatus;
     if (order.status == OrderStatus.pending) {
-      mainActionText = "🔥 CHẤP NHẬN & NẤU MÓN";
-      nextStatus = OrderStatus.preparing;
-    } else if (order.status == OrderStatus.preparing) {
-      mainActionText = "✅ HOÀN THÀNH CHẾ BIẾN";
-      nextStatus = OrderStatus.ready;
-    } else if (order.status == OrderStatus.ready) {
-      mainActionText = "💵 XÁC NHẬN THANH TOÁN";
-      nextStatus = OrderStatus.paid;
+      mainActionText = "🔥 XÁC NHẬN & NẤU MÓN";
+      nextStatus = OrderStatus.confirmed;
+    } else if (order.status == OrderStatus.confirmed) {
+      mainActionText = "🍽️ PHỤC VỤ MÓN";
+      nextStatus = OrderStatus.serving;
+    } else if (order.status == OrderStatus.serving) {
+      mainActionText = "💵 HOÀN THÀNH ĐƠN";
+      nextStatus = OrderStatus.completed;
     }
 
     return Card(
@@ -366,7 +366,7 @@ class _StaffScreenState extends State<StaffScreen>
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: order.status.color.withOpacity(0.12),
+                    color: order.status.color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -390,7 +390,7 @@ class _StaffScreenState extends State<StaffScreen>
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      "${it.menuItemRef?.categoryIcon ?? '🍽️'} ${it.menuItemRef?.name ?? 'Món ăn (ID: ${it.menuItemId})'}   x${it.quantity}",
+                      "${it.menuItemRef?.categoryIcon ?? '🍽️'} ${it.menuItemRef?.name ?? it.menuItemName ?? 'Món ăn (ID: ${it.menuItemId})'}   x${it.quantity}",
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
@@ -418,7 +418,7 @@ class _StaffScreenState extends State<StaffScreen>
                   color: AromaColors.coffeeCardLightBg,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: AromaColors.coffeeCardBorder.withOpacity(0.5),
+                    color: AromaColors.coffeeCardBorder.withValues(alpha: 0.5),
                   ),
                 ),
                 child: Row(
@@ -673,7 +673,7 @@ class _StaffScreenState extends State<StaffScreen>
                   value: item.isAvailable,
                   onChanged: (valu) =>
                       widget.onToggleAvailability(item.menuItemId),
-                  activeColor: AromaColors.coffeePrimary,
+                  activeThumbColor: AromaColors.coffeePrimary,
                   activeTrackColor: AromaColors.coffeeSecondary,
                 ),
                 if (_isAdmin) ...[
@@ -838,7 +838,7 @@ class _StaffScreenState extends State<StaffScreen>
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.12),
+                color: statusColor.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -914,7 +914,7 @@ class _StaffScreenState extends State<StaffScreen>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.12),
+                          color: statusColor.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -1162,7 +1162,7 @@ class _StaffScreenState extends State<StaffScreen>
                         ),
                       ),
                       value: isActive,
-                      activeColor: AromaColors.coffeePrimary,
+                      activeThumbColor: AromaColors.coffeePrimary,
                       onChanged: (value) {
                         setDialogState(() {
                           isActive = value;
@@ -1317,7 +1317,7 @@ class _StaffScreenState extends State<StaffScreen>
                       child: Container(
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.5),
+                          color: Colors.black.withValues(alpha: 0.5),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -1336,7 +1336,7 @@ class _StaffScreenState extends State<StaffScreen>
                   Icon(
                     Icons.add_photo_alternate_outlined,
                     size: 40,
-                    color: AromaColors.coffeePrimary.withOpacity(0.6),
+                    color: AromaColors.coffeePrimary.withValues(alpha: 0.6),
                   ),
                   const SizedBox(height: 8),
                   const Text(
@@ -1395,7 +1395,7 @@ class _StaffScreenState extends State<StaffScreen>
                     const SizedBox(height: 10),
                     // Dropdown for Category selection
                     DropdownButtonFormField<CategoryType>(
-                      value: category,
+                      initialValue: category,
                       decoration: const InputDecoration(
                         labelText: "Phân mục ẩm thực",
                         labelStyle: TextStyle(
@@ -1532,7 +1532,7 @@ class _StaffScreenState extends State<StaffScreen>
                     _buildTextField(nameController, "Tên món"),
                     const SizedBox(height: 10),
                     DropdownButtonFormField<CategoryType>(
-                      value: category,
+                      initialValue: category,
                       decoration: const InputDecoration(
                         labelText: "Phân mục ẩm thực",
                         labelStyle: TextStyle(

@@ -173,7 +173,7 @@ class MockQrScannerDialog extends StatelessWidget {
                             Icon(
                               Icons.qr_code,
                               size: 18,
-                              color: AromaColors.coffeePrimary.withOpacity(0.7),
+                              color: AromaColors.coffeePrimary.withValues(alpha: 0.7),
                             ),
                           ],
                         ),

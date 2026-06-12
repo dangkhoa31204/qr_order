@@ -40,7 +40,7 @@ class AromaBistroApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(
           seedColor: AromaColors.coffeePrimary,
           primary: AromaColors.coffeePrimary,
-          background: AromaColors.coffeeBackground,
+          surface: AromaColors.coffeeBackground,
         ),
         fontFamily: 'Serif',
       ),
@@ -66,22 +66,14 @@ class _MainGateScreenState extends State<MainGateScreen> {
   List<AccountModel> _staffAccounts = [];
 
   bool _isLoading = false;
-  Timer? _syncTimer;
-
   @override
   void initState() {
     super.initState();
-    // Khởi tạo Timer nhưng chỉ chạy nếu đã đăng nhập
-    _syncTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
-      if (_isLoggedIn) {
-        _syncOrdersOnly();
-      }
-    });
+    // TODO: Connect to backend WebSocket and call _syncOrdersOnly() when notified
   }
 
   @override
   void dispose() {
-    _syncTimer?.cancel();
     super.dispose();
   }
 
@@ -109,17 +101,6 @@ class _MainGateScreenState extends State<MainGateScreen> {
     }
   }
 
-  // Light-weight sync for order flow changes in real-time
-  Future<void> _syncOrdersOnly() async {
-    try {
-      final orders = await ApiService.fetchOrderQueue();
-      if (mounted) {
-        setState(() {
-          _orderQueue = orders;
-        });
-      }
-    } catch (_) {}
-  }
 
   // --- ACTIONS ---
 
@@ -240,87 +221,7 @@ class _MainGateScreenState extends State<MainGateScreen> {
     _loadBackendData(); // Tải dữ liệu ngay sau khi đăng nhập thành công
   }
 
-  UserRole get _currentRole {
-    if (_currentUser == null) return UserRole.staff;
-    return _currentUser!.role == AccountRole.admin
-        ? UserRole.admin
-        : UserRole.staff;
-  }
 
-  // --- POPUPS & API OPTION DIALOG ---
-  void _showConfigureApiDialog() {
-    final controller = TextEditingController(text: ApiService.baseUrl);
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text(
-            "Cấu hình C# API Server",
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                "Nhập địa chỉ máy chủ ASP.NET Core API cục bộ của bạn để đồng bộ dữ liệu thật:",
-                style:
-                    TextStyle(fontSize: 12, color: AromaColors.coffeeTextSub),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: controller,
-                decoration: const InputDecoration(
-                  labelText: "API URL",
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12),
-                ),
-                style: const TextStyle(
-                    fontSize: 13, color: AromaColors.coffeeTextDark),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                "Gợi ý kết nối:\n• localhost PC: http://10.0.2.2:5000\n• Lan IP: http://192.168.1.XX:5000\n• Web live service: URL công khai của bạn",
-                style: TextStyle(
-                    fontSize: 11,
-                    fontStyle: FontStyle.italic,
-                    color: Colors.blueGrey),
-              )
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Hủy bỏ", style: TextStyle(color: Colors.grey)),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  ApiService.baseUrl = controller.text.trim();
-                });
-                Navigator.pop(context);
-                _loadBackendData();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                        "Kính chào! Đã chuyển hướng máy chủ sang: ${ApiService.baseUrl}"),
-                    backgroundColor: AromaColors.coffeePrimary,
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: AromaColors.coffeePrimary),
-              child: const Text("Lưu Kết Nối",
-                  style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold)),
-            )
-          ],
-        );
-      },
-    );
-  }
 
   // --- SCREEN RENDERING CONTROLLER ---
   @override

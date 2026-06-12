@@ -114,12 +114,12 @@ class _LoginScreenState extends State<LoginScreen>
                       borderRadius: BorderRadius.circular(32),
                       boxShadow: [
                         BoxShadow(
-                          color: AromaColors.coffeePrimary.withOpacity(0.35),
+                          color: AromaColors.coffeePrimary.withValues(alpha: 0.35),
                           blurRadius: 28,
                           offset: const Offset(0, 12),
                         ),
                         BoxShadow(
-                          color: AromaColors.coffeeGold.withOpacity(0.15),
+                          color: AromaColors.coffeeGold.withValues(alpha: 0.15),
                           blurRadius: 40,
                           spreadRadius: 4,
                           offset: const Offset(0, 0),
@@ -150,7 +150,7 @@ class _LoginScreenState extends State<LoginScreen>
                     padding:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AromaColors.coffeePrimary.withOpacity(0.08),
+                      color: AromaColors.coffeePrimary.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Text(
@@ -182,7 +182,7 @@ class _LoginScreenState extends State<LoginScreen>
                                   color: Colors.red.shade200, width: 1.2),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.red.withOpacity(0.06),
+                                  color: Colors.red.withValues(alpha: 0.06),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
                                 ),
@@ -246,14 +246,14 @@ class _LoginScreenState extends State<LoginScreen>
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AromaColors.coffeePrimary,
                         disabledBackgroundColor:
-                            AromaColors.coffeePrimary.withOpacity(0.5),
+                            AromaColors.coffeePrimary.withValues(alpha: 0.5),
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
                         elevation: 6,
                         shadowColor:
-                            AromaColors.coffeePrimary.withOpacity(0.35),
+                            AromaColors.coffeePrimary.withValues(alpha: 0.35),
                       ),
                       child: _isLoading
                           ? const Row(
@@ -303,7 +303,7 @@ class _LoginScreenState extends State<LoginScreen>
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: AromaColors.successGreen.withOpacity(0.4),
+                              color: AromaColors.successGreen.withValues(alpha: 0.4),
                               blurRadius: 6,
                             ),
                           ],
@@ -314,7 +314,7 @@ class _LoginScreenState extends State<LoginScreen>
                         "Kết nối: ${_getDisplayUrl()}",
                         style: TextStyle(
                           fontSize: 11,
-                          color: AromaColors.coffeeTextSub.withOpacity(0.7),
+                          color: AromaColors.coffeeTextSub.withValues(alpha: 0.7),
                           fontStyle: FontStyle.italic,
                         ),
                       ),
@@ -352,7 +352,7 @@ class _LoginScreenState extends State<LoginScreen>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AromaColors.coffeePrimary.withOpacity(0.05),
+            color: AromaColors.coffeePrimary.withValues(alpha: 0.05),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
