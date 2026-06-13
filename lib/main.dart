@@ -58,7 +58,6 @@ class _MainGateScreenState extends State<MainGateScreen> {
   @override
   void initState() {
     super.initState();
-    _loadBackendData();
   }
 
   // Complete data reload (Menu, orders, tables)
@@ -70,7 +69,9 @@ class _MainGateScreenState extends State<MainGateScreen> {
       final menu = await ApiService.fetchMenuItems();
       final orders = await ApiService.fetchOrderQueue();
       final tables = await ApiService.fetchTables();
-      final staffs = await ApiService.fetchStaffs();
+      final staffs = _currentRole == UserRole.admin
+          ? await ApiService.fetchStaffs()
+          : <AccountModel>[];
 
       setState(() {
         _menuItems = menu;

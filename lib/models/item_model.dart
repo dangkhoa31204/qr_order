@@ -68,9 +68,9 @@ enum TableStatus {
 ==================================================*/
 enum OrderStatus {
   pending(1),
-  confirmed(2),
-  serving(3),
-  completed(4),
+  preparing(2),
+  ready(3),
+  paid(4),
   cancelled(5);
 
   final int value;
@@ -80,11 +80,11 @@ enum OrderStatus {
     switch (this) {
       case OrderStatus.pending:
         return AromaColors.pendingOrange;
-      case OrderStatus.confirmed:
+      case OrderStatus.preparing:
         return AromaColors.preparingBlue;
-      case OrderStatus.serving:
+      case OrderStatus.ready:
         return AromaColors.successGreen;
-      case OrderStatus.completed:
+      case OrderStatus.paid:
         return AromaColors.coffeeTextSub;
       case OrderStatus.cancelled:
         return Colors.redAccent;
@@ -95,11 +95,11 @@ enum OrderStatus {
     switch (this) {
       case OrderStatus.pending:
         return "Chờ xác nhận";
-      case OrderStatus.confirmed:
+      case OrderStatus.preparing:
         return "Đã xác nhận";
-      case OrderStatus.serving:
+      case OrderStatus.ready:
         return "Đang phục vụ";
-      case OrderStatus.completed:
+      case OrderStatus.paid:
         return "Hoàn tất";
       case OrderStatus.cancelled:
         return "Đã hủy";
@@ -111,11 +111,11 @@ enum OrderStatus {
       case 1:
         return OrderStatus.pending;
       case 2:
-        return OrderStatus.confirmed;
+        return OrderStatus.preparing;
       case 3:
-        return OrderStatus.serving;
+        return OrderStatus.ready;
       case 4:
-        return OrderStatus.completed;
+        return OrderStatus.paid;
       case 5:
         return OrderStatus.cancelled;
       default:
@@ -125,15 +125,18 @@ enum OrderStatus {
 
   static OrderStatus fromString(String text) {
     switch (text.toLowerCase()) {
+      case 'preparing':
       case 'confirmed':
       case '2':
-        return OrderStatus.confirmed;
+        return OrderStatus.preparing;
+      case 'ready':
       case 'serving':
       case '3':
-        return OrderStatus.serving;
+        return OrderStatus.ready;
+      case 'paid':
       case 'completed':
       case '4':
-        return OrderStatus.completed;
+        return OrderStatus.paid;
       case 'cancelled':
       case '5':
         return OrderStatus.cancelled;

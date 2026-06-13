@@ -161,7 +161,7 @@ class ApiService {
   // 1. MENU API CALLS
   // ============================================================
   static Future<List<MenuItem>> fetchMenuItems() async {
-    final result = await _safeGet("/api/MenuAll");
+    final result = await _safeGet("/api/Menu");
     if (result["success"] == true) {
       final List rawList = result["data"];
       return rawList.map((item) => MenuItem.fromJson(item)).toList();
