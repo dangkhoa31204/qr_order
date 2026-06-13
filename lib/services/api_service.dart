@@ -4,13 +4,15 @@ import '../models/item_model.dart';
 import '../models/account_model.dart';
 
 class ApiService {
-  // Configurable base URL — trỏ đến backend Render thật
-  static String baseUrl = "https://prm-backend-igqt.onrender.com";
-  static bool useMockFallback = true; // Toggle fallback when server is offline
+  // Configurable base URL — trỏ đến backend ASP.NET Core của bạn
+  static String baseUrl = "https://prm-backend-igqt.onrender.com"; 
+  static bool useMockFallback = false; // Đã có BE thật nên tắt Mock đi để test lỗi cho chính xác
 
   // JWT Token lưu sau khi login thành công
   static String? _accessToken;
   static DateTime? _tokenExpiresAt;
+
+  static String? get accessToken => _accessToken;
 
   /// Kiểm tra token còn hạn hay không
   static bool get isTokenValid {
@@ -69,6 +71,9 @@ class ApiService {
 
   // Helper to fetch response with timeout and error fallback
   static Future<Map<String, dynamic>> _safeGet(String path) async {
+    if (_accessToken == null && useMockFallback) {
+      return {"success": false, "error": "Offline mode"};
+    }
     try {
       final response = await http
           .get(Uri.parse("$baseUrl$path"), headers: _authHeaders)
@@ -156,7 +161,7 @@ class ApiService {
   // 1. MENU API CALLS
   // ============================================================
   static Future<List<MenuItem>> fetchMenuItems() async {
-    final result = await _safeGet("/api/Menu");
+    final result = await _safeGet("/api/MenuAll");
     if (result["success"] == true) {
       final List rawList = result["data"];
       return rawList.map((item) => MenuItem.fromJson(item)).toList();
@@ -180,7 +185,7 @@ class ApiService {
             body: jsonEncode(item.toJson()),
           )
           .timeout(const Duration(seconds: 10));
-      return response.statusCode >= 200 && response.statusCode < 300;
+      return (response.statusCode >= 200 && response.statusCode < 300) || useMockFallback;
     } catch (_) {
       return useMockFallback; // fallback success
     }
@@ -201,7 +206,7 @@ class ApiService {
             body: jsonEncode(item.toJson()),
           )
           .timeout(const Duration(seconds: 10));
-      return response.statusCode >= 200 && response.statusCode < 300;
+      return (response.statusCode >= 200 && response.statusCode < 300) || useMockFallback;
     } catch (_) {
       return useMockFallback;
     }
@@ -217,7 +222,7 @@ class ApiService {
             headers: _authHeaders,
           )
           .timeout(const Duration(seconds: 10));
-      return response.statusCode >= 200 && response.statusCode < 300;
+      return (response.statusCode >= 200 && response.statusCode < 300) || useMockFallback;
     } catch (_) {
       return useMockFallback;
     }
@@ -239,7 +244,7 @@ class ApiService {
             headers: _authHeaders,
           )
           .timeout(const Duration(seconds: 10));
-      return response.statusCode >= 200 && response.statusCode < 300;
+      return (response.statusCode >= 200 && response.statusCode < 300) || useMockFallback;
     } catch (_) {
       return useMockFallback;
     }
@@ -272,7 +277,7 @@ class ApiService {
             body: jsonEncode(order.toJson()),
           )
           .timeout(const Duration(seconds: 10));
-      return response.statusCode >= 200 && response.statusCode < 300;
+      return (response.statusCode >= 200 && response.statusCode < 300) || useMockFallback;
     } catch (_) {
       return useMockFallback;
     }
@@ -287,16 +292,57 @@ class ApiService {
       _mockOrderQueue[idx] = _mockOrderQueue[idx].copyWith(status: status);
     }
 
+    if (_accessToken == null && useMockFallback) return true;
+
+    final uri = Uri.parse("$baseUrl/api/Orders/$orderId/status");
+    final payloads = [
+      {"status": status.value},
+      {"status": status.valueString},
+    ];
+
     try {
-      final response = await http
-          .put(
-            Uri.parse("$baseUrl/api/Orders/$orderId/status"),
-            headers: _authHeaders,
-            body: jsonEncode({"status": status.value}),
-          )
-          .timeout(const Duration(seconds: 10));
-      return response.statusCode >= 200 && response.statusCode < 300;
-    } catch (_) {
+      http.Response? lastResponse;
+
+      for (final payload in payloads) {
+        final patchResponse = await http
+            .patch(
+              uri,
+              headers: _authHeaders,
+              body: jsonEncode(payload),
+            )
+            .timeout(const Duration(seconds: 10));
+
+        if (patchResponse.statusCode >= 200 && patchResponse.statusCode < 300) {
+          return true;
+        }
+
+        lastResponse = patchResponse;
+        if (patchResponse.statusCode != 405 && patchResponse.statusCode != 400) {
+          break;
+        }
+
+        final putResponse = await http
+            .put(
+              uri,
+              headers: _authHeaders,
+              body: jsonEncode(payload),
+            )
+            .timeout(const Duration(seconds: 10));
+
+        if (putResponse.statusCode >= 200 && putResponse.statusCode < 300) {
+          return true;
+        }
+
+        lastResponse = putResponse;
+        if (putResponse.statusCode != 405 && putResponse.statusCode != 400) {
+          break;
+        }
+      }
+
+      print("❌ Lỗi Cập Nhật Đơn ${orderId}: Server trả về ${lastResponse?.statusCode} - ${lastResponse?.body}");
+      return useMockFallback;
+    } catch (e) {
+      print("❌ Lỗi Mạng Cập Nhật Đơn: $e");
       return useMockFallback;
     }
   }
@@ -338,7 +384,7 @@ class ApiService {
             }),
           )
           .timeout(const Duration(seconds: 10));
-      return response.statusCode >= 200 && response.statusCode < 300;
+      return (response.statusCode >= 200 && response.statusCode < 300) || useMockFallback;
     } catch (_) {
       return useMockFallback;
     }
@@ -361,7 +407,7 @@ class ApiService {
             }),
           )
           .timeout(const Duration(seconds: 10));
-      return response.statusCode >= 200 && response.statusCode < 300;
+      return (response.statusCode >= 200 && response.statusCode < 300) || useMockFallback;
     } catch (_) {
       return useMockFallback;
     }
@@ -377,7 +423,94 @@ class ApiService {
             headers: _authHeaders,
           )
           .timeout(const Duration(seconds: 10));
-      return response.statusCode >= 200 && response.statusCode < 300;
+      return (response.statusCode >= 200 && response.statusCode < 300) || useMockFallback;
+    } catch (_) {
+      return useMockFallback;
+    }
+  }
+
+  // ============================================================
+  // 4. STAFF ACCOUNT API CALLS (Admin Only)
+  // ============================================================
+  static Future<List<AccountModel>> fetchStaffs() async {
+    final result = await _safeGet("/api/Auth/staff");
+    if (result["success"] == true) {
+      final List rawList = result["data"];
+      return rawList.map((item) => AccountModel.fromJson(item)).toList();
+    } else {
+      print("ApiService.fetchStaffs failed: ${result["error"]}. Utilizing mock fallback.");
+      return _mockAccounts.where((a) => a.role == AccountRole.staff).toList();
+    }
+  }
+
+  static Future<bool> createStaff(AccountModel staff, String password) async {
+    int maxId = 0;
+    for (var a in _mockAccounts) {
+      if (a.accountId > maxId) maxId = a.accountId;
+    }
+    final mockStaff = staff.copyWith(accountId: maxId + 1, passwordHash: password);
+    _mockAccounts.add(mockStaff);
+
+    try {
+      final response = await http
+          .post(
+            Uri.parse("$baseUrl/api/Auth/admin-create"),
+            headers: _authHeaders,
+            body: jsonEncode({
+              "username": staff.username,
+              "email": staff.email,
+              "password": password,
+              "fullName": staff.fullName,
+              "phoneNumber": staff.phoneNumber,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+      return (response.statusCode >= 200 && response.statusCode < 300) || useMockFallback;
+    } catch (_) {
+      return useMockFallback;
+    }
+  }
+
+  static Future<bool> updateStaff(AccountModel staff) async {
+    final idx = _mockAccounts.indexWhere((a) => a.accountId == staff.accountId);
+    if (idx != -1) {
+      _mockAccounts[idx] = staff;
+    }
+
+    try {
+      final response = await http
+          .put(
+            Uri.parse("$baseUrl/api/Auth/accounts/${staff.accountId}"),
+            headers: _authHeaders,
+            body: jsonEncode({
+              "username": staff.username,
+              "email": staff.email,
+              "fullName": staff.fullName,
+              "phoneNumber": staff.phoneNumber,
+              "isActive": staff.isActive,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+      return (response.statusCode >= 200 && response.statusCode < 300) || useMockFallback;
+    } catch (_) {
+      return useMockFallback;
+    }
+  }
+
+  static Future<bool> deleteStaff(int accountId) async {
+    final idx = _mockAccounts.indexWhere((a) => a.accountId == accountId);
+    if (idx != -1) {
+      _mockAccounts[idx] = _mockAccounts[idx].copyWith(isActive: false);
+    }
+
+    try {
+      final response = await http
+          .delete(
+            Uri.parse("$baseUrl/api/Auth/accounts/$accountId"),
+            headers: _authHeaders,
+          )
+          .timeout(const Duration(seconds: 10));
+      return (response.statusCode >= 200 && response.statusCode < 300) || useMockFallback;
     } catch (_) {
       return useMockFallback;
     }

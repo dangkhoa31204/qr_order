@@ -128,7 +128,9 @@ class LoginResponse {
           ? DateTime.tryParse(json['expiresAt'].toString()) ?? DateTime.now()
           : DateTime.now(),
       username: json['username']?.toString() ?? '',
-      role: json['role'] as int? ?? 2,
+      role: json['role'] != null 
+          ? (int.tryParse(json['role'].toString()) ?? 2)
+          : 2,
     );
   }
 

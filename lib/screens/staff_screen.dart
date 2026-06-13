@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import '../constants.dart';
 import '../models/item_model.dart';
 import '../models/account_model.dart';
@@ -12,12 +11,7 @@ class StaffScreen extends StatefulWidget {
   final List<TableModel> tables;
   final Function(int, OrderStatus) onUpdateOrderStatus;
   final Function(int) onToggleAvailability;
-  final Function(MenuItem) onCreateMenuItem;
-  final Function(MenuItem) onUpdateMenuItem;
-  final Function(int) onDeleteMenuItem;
-  final Function(TableModel) onAddTable;
   final Function(TableModel) onUpdateTable;
-  final Function(int) onDeleteTable;
   final Function(TableModel) onExportQrCode;
   final AccountModel? currentUser;
   final VoidCallback onBackToGateway;
@@ -29,12 +23,7 @@ class StaffScreen extends StatefulWidget {
     required this.tables,
     required this.onUpdateOrderStatus,
     required this.onToggleAvailability,
-    required this.onCreateMenuItem,
-    required this.onUpdateMenuItem,
-    required this.onDeleteMenuItem,
-    required this.onAddTable,
     required this.onUpdateTable,
-    required this.onDeleteTable,
     required this.onExportQrCode,
     this.currentUser,
     required this.onBackToGateway,
@@ -73,9 +62,9 @@ class _StaffScreenState extends State<StaffScreen>
       appBar: AppBar(
         title: Row(
           children: [
-            const Text(
-              "Staff Dashboard",
-              style: TextStyle(
+            Text(
+              widget.currentUser?.role == AccountRole.admin ? "Admin Dashboard" : "Staff Dashboard",
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
                 color: Colors.white,
@@ -151,10 +140,11 @@ class _StaffScreenState extends State<StaffScreen>
           _buildMenuTab(),
           TableManagementScreen(
             tables: widget.tables,
-            onAddTable: widget.onAddTable,
+            onAddTable: (_) {},
             onUpdateTable: widget.onUpdateTable,
-            onDeleteTable: widget.onDeleteTable,
+            onDeleteTable: (_) {},
             onExportQrCode: widget.onExportQrCode,
+            isStaff: true,
           ),
         ],
       ),
@@ -267,6 +257,8 @@ class _StaffScreenState extends State<StaffScreen>
     );
   }
 
+
+
   Widget _buildOrderCard(OrderModel order) {
     String mainActionText = "";
     OrderStatus? nextStatus;
@@ -354,25 +346,55 @@ class _StaffScreenState extends State<StaffScreen>
             ...order.items.map((it) {
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      "${it.menuItemRef?.categoryIcon ?? '🍽️'} ${it.menuItemRef?.name ?? 'Món ăn (ID: ${it.menuItemId})'}   x${it.quantity}",
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: AromaColors.coffeeTextDark,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "${it.menuItemRef?.categoryIcon ?? '🍽️'} ${it.menuItemRef?.name ?? 'Món ăn (ID: ${it.menuItemId})'}   x${it.quantity}",
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: AromaColors.coffeeTextDark,
+                          ),
+                        ),
+                        Text(
+                          formatVND(it.unitPrice * it.quantity),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AromaColors.coffeePrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
-                    Text(
-                      formatVND(it.unitPrice * it.quantity),
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AromaColors.coffeePrimary,
-                        fontWeight: FontWeight.w600,
+                    if (it.note != null && it.note!.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4.0, left: 24.0),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(
+                              Icons.subdirectory_arrow_right,
+                              size: 14,
+                              color: AromaColors.coffeeTextSub,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                it.note!,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontStyle: FontStyle.italic,
+                                  color: AromaColors.coffeeTextSub,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
                   ],
                 ),
               );
@@ -496,25 +518,6 @@ class _StaffScreenState extends State<StaffScreen>
                   color: AromaColors.coffeeTextSub,
                 ),
               ),
-              ElevatedButton.icon(
-                onPressed: () => _showAddMenuItemDialog(context),
-                icon: const Icon(Icons.add, size: 14, color: Colors.white),
-                label: const Text(
-                  "THÊM MÓN MỚI",
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AromaColors.coffeePrimary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                ),
-              ),
             ],
           ),
         ),
@@ -628,7 +631,7 @@ class _StaffScreenState extends State<StaffScreen>
               ),
             ),
 
-            // Controls (Toggle availability, edit item, delete item)
+            // Controls (Toggle availability)
             Row(
               children: [
                 // Availability toggle
@@ -638,418 +641,9 @@ class _StaffScreenState extends State<StaffScreen>
                   activeColor: AromaColors.coffeePrimary,
                   activeTrackColor: AromaColors.coffeeSecondary,
                 ),
-                // Edit Dialog
-                IconButton(
-                  onPressed: () => _showEditMenuItemDialog(context, item),
-                  icon: const Icon(
-                    Icons.edit,
-                    size: 18,
-                    color: AromaColors.coffeePrimary,
-                  ),
-                  tooltip: "Sửa món",
-                ),
-                // Delete
-                IconButton(
-                  onPressed: () => widget.onDeleteMenuItem(item.menuItemId),
-                  icon: const Icon(
-                    Icons.delete_outline,
-                    size: 18,
-                    color: Colors.redAccent,
-                  ),
-                  tooltip: "Xóa món",
-                ),
               ],
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  // --- POPUP DIALOGS: ADD MENU ITEM ---
-  Future<void> _pickImage(StateSetter setDialogState, Function(String) onPicked) async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 800,
-      maxHeight: 800,
-      imageQuality: 85,
-    );
-    if (image != null) {
-      setDialogState(() {
-        onPicked(image.path);
-      });
-    }
-  }
-
-  Widget _buildImagePicker({
-    required String? imagePath,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 140,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: AromaColors.coffeeCardLightBg,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: AromaColors.coffeeCardBorder,
-            width: 1.5,
-          ),
-        ),
-        child: imagePath != null && imagePath.isNotEmpty
-            ? ClipRRect(
-                borderRadius: BorderRadius.circular(15),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Image.file(
-                      File(imagePath),
-                      fit: BoxFit.cover,
-                    ),
-                    Positioned(
-                      top: 6,
-                      right: 6,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.5),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.edit,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.add_photo_alternate_outlined,
-                    size: 40,
-                    color: AromaColors.coffeePrimary.withOpacity(0.6),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    "Chạm để chọn ảnh từ thiết bị",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AromaColors.coffeeTextSub,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const Text(
-                    "(Tùy chọn)",
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ],
-              ),
-      ),
-    );
-  }
-
-  void _showAddMenuItemDialog(BuildContext context) {
-    final nameController = TextEditingController();
-    final priceController = TextEditingController();
-    final descController = TextEditingController();
-    String? pickedImagePath;
-    CategoryType category = CategoryType.coffee;
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              title: const Text(
-                "Thêm Món Thực Đơn Mới",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: AromaColors.coffeeTextDark,
-                ),
-              ),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildTextField(
-                      nameController,
-                      "Tên món (Ví dụ: Cà phê sữa)",
-                    ),
-                    const SizedBox(height: 10),
-                    // Dropdown for Category selection
-                    DropdownButtonFormField<CategoryType>(
-                      value: category,
-                      decoration: const InputDecoration(
-                        labelText: "Phân mục ẩm thực",
-                        labelStyle: TextStyle(
-                          fontSize: 12,
-                          color: AromaColors.coffeePrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        border: OutlineInputBorder(),
-                      ),
-                      items: CategoryType.values.map((cat) {
-                        return DropdownMenuItem(
-                          value: cat,
-                          child: Text("${cat.label} ${cat.icon}"),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                        if (val != null) {
-                          setDialogState(() {
-                            category = val;
-                          });
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 10),
-                    _buildTextField(
-                      priceController,
-                      "Đơn giá VND (Ví dụ: 30000)",
-                      isNumber: true,
-                    ),
-                    const SizedBox(height: 10),
-                    // Image Picker thay thế cho Image URL
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        "Ảnh món ăn",
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AromaColors.coffeePrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    _buildImagePicker(
-                      imagePath: pickedImagePath,
-                      onTap: () => _pickImage(setDialogState, (path) {
-                        pickedImagePath = path;
-                      }),
-                    ),
-                    const SizedBox(height: 10),
-                    _buildTextField(
-                      descController,
-                      "Mô tả chi tiết",
-                      maxLines: 2,
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    "Hủy bỏ",
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    final p = double.tryParse(priceController.text) ?? 0.0;
-                    final newItem = MenuItem(
-                      menuItemId: widget.menuItems.length + 100, // mock ID, DB sẽ tự gen ID
-                      name: nameController.text.isNotEmpty ? nameController.text : "Món mới",
-                      price: p,
-                      description: descController.text,
-                      category: category,
-                      imageUrl: pickedImagePath,
-                    );
-                    widget.onCreateMenuItem(newItem);
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AromaColors.coffeePrimary,
-                  ),
-                  child: const Text(
-                    "Thêm món",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  // --- POPUP DIALOGS: EDIT MENU ITEM ---
-  void _showEditMenuItemDialog(BuildContext context, MenuItem item) {
-    final nameController = TextEditingController(text: item.name);
-    final priceController = TextEditingController(
-      text: item.price.toStringAsFixed(0),
-    );
-    final descController = TextEditingController(text: item.description ?? "");
-    String? pickedImagePath = item.imageUrl;
-    CategoryType category = item.category;
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              title: const Text(
-                "Sửa Thông Tin Món",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: AromaColors.coffeeTextDark,
-                ),
-              ),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildTextField(nameController, "Tên món"),
-                    const SizedBox(height: 10),
-                    DropdownButtonFormField<CategoryType>(
-                      value: category,
-                      decoration: const InputDecoration(
-                        labelText: "Phân mục ẩm thực",
-                        labelStyle: TextStyle(
-                          fontSize: 12,
-                          color: AromaColors.coffeePrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        border: OutlineInputBorder(),
-                      ),
-                      items: CategoryType.values.map((cat) {
-                        return DropdownMenuItem(
-                          value: cat,
-                          child: Text("${cat.label} ${cat.icon}"),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                        if (val != null) {
-                          setDialogState(() {
-                            category = val;
-                          });
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 10),
-                    _buildTextField(
-                      priceController,
-                      "Đơn giá VND",
-                      isNumber: true,
-                    ),
-                    const SizedBox(height: 10),
-                    // Image Picker thay thế cho Image URL
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        "Ảnh món ăn",
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AromaColors.coffeePrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    _buildImagePicker(
-                      imagePath: pickedImagePath,
-                      onTap: () => _pickImage(setDialogState, (path) {
-                        pickedImagePath = path;
-                      }),
-                    ),
-                    const SizedBox(height: 10),
-                    _buildTextField(
-                      descController,
-                      "Mô tả",
-                      maxLines: 2,
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    "Hủy bỏ",
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    final p = double.tryParse(priceController.text) ?? item.price;
-                    final updated = item.copyWith(
-                      name: nameController.text,
-                      price: p,
-                      description: descController.text,
-                      imageUrl: pickedImagePath,
-                      category: category,
-                      updatedAt: DateTime.now(),
-                    );
-                    widget.onUpdateMenuItem(updated);
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AromaColors.coffeePrimary,
-                  ),
-                  child: const Text(
-                    "Lưu",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildTextField(
-    TextEditingController ctrl,
-    String hint, {
-    bool isNumber = false,
-    int maxLines = 1,
-  }) {
-    return TextField(
-      controller: ctrl,
-      keyboardType: isNumber
-          ? const TextInputType.numberWithOptions(decimal: true)
-          : TextInputType.text,
-      maxLines: maxLines,
-      style: const TextStyle(fontSize: 13, color: AromaColors.coffeeTextDark),
-      decoration: InputDecoration(
-        labelText: hint,
-        labelStyle: const TextStyle(
-          fontSize: 12,
-          color: AromaColors.coffeeTextSub,
-        ),
-        border: const OutlineInputBorder(),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 10,
         ),
       ),
     );

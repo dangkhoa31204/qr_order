@@ -10,6 +10,7 @@ class TableManagementScreen extends StatefulWidget {
   final Function(TableModel) onUpdateTable;
   final Function(int) onDeleteTable;
   final Function(TableModel) onExportQrCode;
+  final bool isStaff;
 
   const TableManagementScreen({
     super.key,
@@ -18,6 +19,7 @@ class TableManagementScreen extends StatefulWidget {
     required this.onUpdateTable,
     required this.onDeleteTable,
     required this.onExportQrCode,
+    this.isStaff = false,
   });
 
   @override
@@ -542,18 +544,19 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                   color: AromaColors.coffeeTextDark,
                 ),
               ),
-              ElevatedButton.icon(
-                onPressed: _showAddTableDialog,
-                icon: const Icon(Icons.add),
-                label: const Text("Thêm Bàn"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AromaColors.coffeePrimary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              if (!widget.isStaff)
+                ElevatedButton.icon(
+                  onPressed: _showAddTableDialog,
+                  icon: const Icon(Icons.add),
+                  label: const Text("Thêm Bàn"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AromaColors.coffeePrimary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
         ),
@@ -686,14 +689,15 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                   onPressed: () => _showEditTableDialog(table),
                                   tooltip: "Sửa bàn",
                                 ),
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.delete,
-                                    color: Colors.red,
+                                if (!widget.isStaff)
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.delete,
+                                      color: Colors.red,
+                                    ),
+                                    onPressed: () => _deleteTable(table),
+                                    tooltip: "Xóa bàn",
                                   ),
-                                  onPressed: () => _deleteTable(table),
-                                  tooltip: "Xóa bàn",
-                                ),
                               ],
                             ),
                           ],

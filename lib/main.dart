@@ -1,28 +1,16 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'constants.dart';
 import 'models/item_model.dart';
 import 'models/account_model.dart';
 import 'services/api_service.dart';
+import 'services/signalr_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/staff_screen.dart';
-import 'customer_main.dart'; // Thêm để chạy luồng Customer khi cần
+import 'screens/admin_screen.dart';
 
 void main() {
-  int? webTableId;
-  if (kIsWeb) {
-    final uri = Uri.base;
-    webTableId = int.tryParse(uri.queryParameters['tableId'] ?? '');
-  }
-
-  if (webTableId != null) {
-    // Nếu có tableId trên URL, chạy luôn ứng dụng gọi món của khách
-    runApp(CustomerApp(tableId: webTableId));
-  } else {
-    // Nếu không có, chạy ứng dụng chính (Admin / Staff)
-    runApp(const AromaBistroApp());
-  }
+  runApp(const AromaBistroApp());
 }
 
 class AromaBistroApp extends StatelessWidget {
@@ -63,24 +51,14 @@ class _MainGateScreenState extends State<MainGateScreen> {
   List<MenuItem> _menuItems = [];
   List<OrderModel> _orderQueue = [];
   List<TableModel> _tables = [];
+  List<AccountModel> _staffs = [];
 
   bool _isLoading = false;
-  Timer? _syncTimer;
 
   @override
   void initState() {
     super.initState();
     _loadBackendData();
-    // Periodically sync every 2 seconds to simulate real-time sockets (SignalR / WebSockets)
-    _syncTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
-      _syncOrdersOnly();
-    });
-  }
-
-  @override
-  void dispose() {
-    _syncTimer?.cancel();
-    super.dispose();
   }
 
   // Complete data reload (Menu, orders, tables)
@@ -92,29 +70,19 @@ class _MainGateScreenState extends State<MainGateScreen> {
       final menu = await ApiService.fetchMenuItems();
       final orders = await ApiService.fetchOrderQueue();
       final tables = await ApiService.fetchTables();
+      final staffs = await ApiService.fetchStaffs();
 
       setState(() {
         _menuItems = menu;
         _orderQueue = orders;
         _tables = tables;
+        _staffs = staffs;
       });
     } catch (e) {
       print("Error loading backend data: $e");
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  // Light-weight sync for order flow changes in real-time
-  Future<void> _syncOrdersOnly() async {
-    try {
-      final orders = await ApiService.fetchOrderQueue();
-      if (mounted) {
-        setState(() {
-          _orderQueue = orders;
-        });
-      }
-    } catch (_) {}
   }
 
   // --- ACTIONS ---
@@ -190,12 +158,38 @@ class _MainGateScreenState extends State<MainGateScreen> {
     );
   }
 
+  // Staff Management Functions (Admin Only)
+  Future<void> _createStaff(AccountModel staff, String password) async {
+    final success = await ApiService.createStaff(staff, password);
+    if (success) {
+      _loadBackendData();
+    }
+  }
+
+  Future<void> _updateStaff(AccountModel staff) async {
+    final success = await ApiService.updateStaff(staff);
+    if (success) {
+      _loadBackendData();
+    }
+  }
+
+  Future<void> _deleteStaff(int accountId) async {
+    final success = await ApiService.deleteStaff(accountId);
+    if (success) {
+      _loadBackendData();
+    }
+  }
+
   void _handleLogin(AccountModel account) {
     setState(() {
       _isLoggedIn = true;
       _currentUser = account;
     });
     _loadBackendData();
+    // Khởi tạo SignalR ngay sau khi login thành công
+    SignalRService.init(() {
+      _loadBackendData();
+    });
   }
 
   UserRole get _currentRole {
@@ -290,6 +284,36 @@ class _MainGateScreenState extends State<MainGateScreen> {
       );
     }
 
+    if (_currentRole == UserRole.admin) {
+      return AdminScreen(
+        orders: _orderQueue,
+        menuItems: _menuItems,
+        tables: _tables,
+        staffs: _staffs,
+        onUpdateOrderStatus: _updateOrderStatus,
+        onToggleAvailability: _toggleAvailability,
+        onCreateMenuItem: _createMenuItem,
+        onUpdateMenuItem: _updateMenuItem,
+        onDeleteMenuItem: _deleteMenuItem,
+        onAddTable: _addTable,
+        onUpdateTable: _updateTable,
+        onDeleteTable: _deleteTable,
+        onCreateStaff: _createStaff,
+        onUpdateStaff: _updateStaff,
+        onDeleteStaff: _deleteStaff,
+        onExportQrCode: _exportQrCode,
+        currentUser: _currentUser,
+        onBackToGateway: () {
+          SignalRService.disconnect();
+          ApiService.clearToken();
+          setState(() {
+            _isLoggedIn = false;
+            _currentUser = null;
+          });
+        },
+      );
+    }
+
     // Show StaffScreen if logged in
     return StaffScreen(
       orders: _orderQueue,
@@ -297,15 +321,11 @@ class _MainGateScreenState extends State<MainGateScreen> {
       tables: _tables,
       onUpdateOrderStatus: _updateOrderStatus,
       onToggleAvailability: _toggleAvailability,
-      onCreateMenuItem: _createMenuItem,
-      onUpdateMenuItem: _updateMenuItem,
-      onDeleteMenuItem: _deleteMenuItem,
-      onAddTable: _addTable,
       onUpdateTable: _updateTable,
-      onDeleteTable: _deleteTable,
       onExportQrCode: _exportQrCode,
       currentUser: _currentUser,
       onBackToGateway: () {
+        SignalRService.disconnect();
         ApiService.clearToken();
         setState(() {
           _isLoggedIn = false;

@@ -7,7 +7,7 @@ import 'package:intl/intl.dart';
 class QrCodeGenerator {
   /// Base URL cho trang order khách hàng (trỏ về root path của frontend)
   /// Khi khách quét QR sẽ mở link này kèm tableId
-  static const String orderBaseUrl = "https://qr-order-api.onrender.com";
+  static const String orderBaseUrl = "https://web-menu-yyq9.onrender.com";
 
   /// Tạo URL order cho bàn cụ thể
   static String getOrderUrl(int tableId) {
