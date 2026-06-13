@@ -68,9 +68,9 @@ enum TableStatus {
 ==================================================*/
 enum OrderStatus {
   pending(1),
-  preparing(2),
-  ready(3),
-  paid(4),
+  confirmed(2),
+  serving(3),
+  completed(4),
   cancelled(5);
 
   final int value;
@@ -80,11 +80,11 @@ enum OrderStatus {
     switch (this) {
       case OrderStatus.pending:
         return AromaColors.pendingOrange;
-      case OrderStatus.preparing:
+      case OrderStatus.confirmed:
         return AromaColors.preparingBlue;
-      case OrderStatus.ready:
+      case OrderStatus.serving:
         return AromaColors.successGreen;
-      case OrderStatus.paid:
+      case OrderStatus.completed:
         return AromaColors.coffeeTextSub;
       case OrderStatus.cancelled:
         return Colors.redAccent;
@@ -95,12 +95,12 @@ enum OrderStatus {
     switch (this) {
       case OrderStatus.pending:
         return "Chờ xác nhận";
-      case OrderStatus.preparing:
-        return "Đang chế biến";
-      case OrderStatus.ready:
-        return "Hoàn thành món";
-      case OrderStatus.paid:
-        return "Đã thanh toán";
+      case OrderStatus.confirmed:
+        return "Đã xác nhận";
+      case OrderStatus.serving:
+        return "Đang phục vụ";
+      case OrderStatus.completed:
+        return "Hoàn tất";
       case OrderStatus.cancelled:
         return "Đã hủy";
     }
@@ -111,11 +111,11 @@ enum OrderStatus {
       case 1:
         return OrderStatus.pending;
       case 2:
-        return OrderStatus.preparing;
+        return OrderStatus.confirmed;
       case 3:
-        return OrderStatus.ready;
+        return OrderStatus.serving;
       case 4:
-        return OrderStatus.paid;
+        return OrderStatus.completed;
       case 5:
         return OrderStatus.cancelled;
       default:
@@ -125,15 +125,15 @@ enum OrderStatus {
 
   static OrderStatus fromString(String text) {
     switch (text.toLowerCase()) {
-      case 'preparing':
+      case 'confirmed':
       case '2':
-        return OrderStatus.preparing;
-      case 'ready':
+        return OrderStatus.confirmed;
+      case 'serving':
       case '3':
-        return OrderStatus.ready;
-      case 'paid':
+        return OrderStatus.serving;
+      case 'completed':
       case '4':
-        return OrderStatus.paid;
+        return OrderStatus.completed;
       case 'cancelled':
       case '5':
         return OrderStatus.cancelled;
@@ -300,6 +300,7 @@ class OrderItemModel {
   final int quantity;
   final double unitPrice;
   final String? note;
+  final String? menuItemName;
 
   // Không có trong DB, dùng để hiển thị UI
   final MenuItem? menuItemRef;
@@ -311,6 +312,7 @@ class OrderItemModel {
     required this.quantity,
     required this.unitPrice,
     this.note,
+    this.menuItemName,
     this.menuItemRef,
   });
 
@@ -322,6 +324,7 @@ class OrderItemModel {
       quantity: json['quantity'] as int? ?? 1,
       unitPrice: (json['unitPrice'] as num?)?.toDouble() ?? 0.0,
       note: json['note']?.toString(),
+      menuItemName: json['menuItemName']?.toString(),
       menuItemRef: menuItemRef,
     );
   }
@@ -334,6 +337,7 @@ class OrderItemModel {
       'quantity': quantity,
       'unitPrice': unitPrice,
       'note': note,
+      'menuItemName': menuItemName,
     };
   }
 
@@ -344,6 +348,7 @@ class OrderItemModel {
     int? quantity,
     double? unitPrice,
     String? note,
+    String? menuItemName,
     MenuItem? menuItemRef,
   }) {
     return OrderItemModel(
@@ -353,6 +358,7 @@ class OrderItemModel {
       quantity: quantity ?? this.quantity,
       unitPrice: unitPrice ?? this.unitPrice,
       note: note ?? this.note,
+      menuItemName: menuItemName ?? this.menuItemName,
       menuItemRef: menuItemRef ?? this.menuItemRef,
     );
   }
@@ -457,11 +463,70 @@ class OrderModel {
 
 /// Seed Menu Items — giá VND khớp DB
 final List<MenuItem> initialMenuItems = [
-  MenuItem(menuItemId: 1, name: "Espresso", description: "Italian espresso", price: 30000, category: CategoryType.coffee),
-  MenuItem(menuItemId: 2, name: "Latte", description: "Milk coffee", price: 45000, category: CategoryType.coffee),
-  MenuItem(menuItemId: 3, name: "Matcha Tea", description: "Japanese matcha", price: 50000, category: CategoryType.tea),
-  MenuItem(menuItemId: 4, name: "Cheesecake", description: "New York cheesecake", price: 55000, category: CategoryType.cake),
-  MenuItem(menuItemId: 5, name: "Orange Juice", description: "Fresh orange juice", price: 40000, category: CategoryType.juice),
+  MenuItem(
+    menuItemId: 1,
+    name: "Espresso",
+    description: "Italian espresso",
+    price: 30000,
+    category: CategoryType.coffee,
+    isAvailable: false,
+  ),
+  MenuItem(
+    menuItemId: 2,
+    name: "Latte",
+    description: "Milk coffee",
+    price: 45000,
+    category: CategoryType.coffee,
+    isAvailable: false,
+  ),
+  MenuItem(
+    menuItemId: 3,
+    name: "Matcha Tea",
+    description: "Japanese matcha",
+    price: 50000,
+    category: CategoryType.tea,
+    isAvailable: true,
+  ),
+  MenuItem(
+    menuItemId: 4,
+    name: "Cheesecake",
+    description: "New York cheesecake",
+    price: 55000,
+    category: CategoryType.cake,
+    isAvailable: false,
+  ),
+  MenuItem(
+    menuItemId: 5,
+    name: "Orange Juice",
+    description: "Fresh orange juice",
+    price: 40000,
+    category: CategoryType.juice,
+    isAvailable: true,
+  ),
+  MenuItem(
+    menuItemId: 6,
+    name: "CaPheTrung",
+    description: "ca phe rat ng...",
+    price: 20000,
+    category: CategoryType.coffee,
+    isAvailable: false,
+  ),
+  MenuItem(
+    menuItemId: 7,
+    name: "aas",
+    description: "asdasd",
+    price: 30000,
+    category: CategoryType.coffee,
+    isAvailable: false,
+  ),
+  MenuItem(
+    menuItemId: 8,
+    name: "v Brainy",
+    description: "co",
+    price: 30000,
+    category: CategoryType.tea,
+    isAvailable: true,
+  ),
 ];
 
 /// Seed Tables — 8 bàn khớp DB (Capacity: 4,4,4,4,6,6,8,8)
