@@ -70,9 +70,7 @@ class _AdminScreenState extends State<AdminScreen>
 
   @override
   Widget build(BuildContext context) {
-    // Separate active order vs historic/paid orders
-    final activeOrders =
-        widget.orders.where((o) => o.status != OrderStatus.paid && o.status != OrderStatus.cancelled).toList();
+    // Separate historic/paid orders
     final historicOrders =
         widget.orders.where((o) => o.status == OrderStatus.paid || o.status == OrderStatus.cancelled).toList();
 
@@ -96,8 +94,8 @@ class _AdminScreenState extends State<AdminScreen>
                     horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: widget.currentUser!.role == AccountRole.admin
-                      ? AromaColors.coffeeGold.withOpacity(0.9)
-                      : Colors.white.withOpacity(0.2),
+                      ? AromaColors.coffeeGold.withValues(alpha: 0.9)
+                      : Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -320,7 +318,7 @@ class _AdminScreenState extends State<AdminScreen>
           children: [
             CircleAvatar(
               radius: 28,
-              backgroundColor: AromaColors.coffeePrimary.withOpacity(0.1),
+              backgroundColor: AromaColors.coffeePrimary.withValues(alpha: 0.1),
               child: const Icon(Icons.person, size: 32, color: AromaColors.coffeePrimary),
             ),
             const SizedBox(width: 16),
@@ -346,7 +344,7 @@ class _AdminScreenState extends State<AdminScreen>
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.redAccent.withOpacity(0.1),
+                            color: Colors.redAccent.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: const Text("Vô hiệu hóa", style: TextStyle(fontSize: 10, color: Colors.red)),
@@ -550,7 +548,7 @@ class _AdminScreenState extends State<AdminScreen>
                 Switch(
                   value: item.isAvailable,
                   onChanged: (valu) => widget.onToggleAvailability(item.menuItemId),
-                  activeColor: AromaColors.coffeePrimary,
+                  activeThumbColor: AromaColors.coffeePrimary,
                   activeTrackColor: AromaColors.coffeeSecondary,
                 ),
                 // Edit Dialog
@@ -630,7 +628,7 @@ class _AdminScreenState extends State<AdminScreen>
                       child: Container(
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.5),
+                          color: Colors.black.withValues(alpha: 0.5),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -649,7 +647,7 @@ class _AdminScreenState extends State<AdminScreen>
                   Icon(
                     Icons.add_photo_alternate_outlined,
                     size: 40,
-                    color: AromaColors.coffeePrimary.withOpacity(0.6),
+                    color: AromaColors.coffeePrimary.withValues(alpha: 0.6),
                   ),
                   const SizedBox(height: 8),
                   const Text(
@@ -708,7 +706,7 @@ class _AdminScreenState extends State<AdminScreen>
                     const SizedBox(height: 10),
                     // Dropdown for Category selection
                     DropdownButtonFormField<CategoryType>(
-                      value: category,
+                      initialValue: category,
                       decoration: const InputDecoration(
                         labelText: "Phân mục ẩm thực",
                         labelStyle: TextStyle(
@@ -842,7 +840,7 @@ class _AdminScreenState extends State<AdminScreen>
                     _buildTextField(nameController, "Tên món"),
                     const SizedBox(height: 10),
                     DropdownButtonFormField<CategoryType>(
-                      value: category,
+                      initialValue: category,
                       decoration: const InputDecoration(
                         labelText: "Phân mục ẩm thực",
                         labelStyle: TextStyle(

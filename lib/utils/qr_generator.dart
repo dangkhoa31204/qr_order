@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
@@ -35,7 +36,7 @@ class QrCodeGenerator {
         }
       }
     } catch (e) {
-      print("Error generating QR code: $e");
+      debugPrint('Error generating QR code: $e');
     }
     return null;
   }
@@ -53,7 +54,7 @@ class QrCodeGenerator {
       final qrImageData = await generateTableQrCode(parsedId);
 
       if (qrImageData == null) {
-        print("Failed to generate QR code image");
+        debugPrint('Failed to generate QR code image');
         return false;
       }
 
@@ -71,7 +72,7 @@ class QrCodeGenerator {
       }
 
       if (downloadsDir == null || !await downloadsDir.exists()) {
-        print("Downloads directory not found");
+        debugPrint('Downloads directory not found');
         return false;
       }
 
@@ -85,10 +86,10 @@ class QrCodeGenerator {
       final file = File(filePath);
       await file.writeAsBytes(qrImageData);
 
-      print("QR code saved to: $filePath");
+      debugPrint('QR code saved to: $filePath');
       return true;
     } catch (e) {
-      print("Error saving QR code: $e");
+      debugPrint('Error saving QR code: $e');
       return false;
     }
   }

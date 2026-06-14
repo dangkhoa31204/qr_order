@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 import 'api_service.dart';
 
@@ -25,15 +26,15 @@ class SignalRService {
 
     // Lắng nghe sự kiện OrderCreated
     _hubConnection!.on("OrderCreated", (arguments) {
-      print("🔔 SignalR received: OrderCreated");
+      debugPrint('🔔 SignalR received: OrderCreated');
       onOrderCreated();
     });
 
     try {
       await _hubConnection!.start();
-      print("✅ SignalR connected successfully to $serverUrl");
+      debugPrint('✅ SignalR connected successfully to $serverUrl');
     } catch (e) {
-      print("❌ SignalR connection failed: $e");
+      debugPrint('❌ SignalR connection failed: $e');
     }
   }
 
@@ -42,7 +43,7 @@ class SignalRService {
     if (_hubConnection != null) {
       await _hubConnection!.stop();
       _hubConnection = null;
-      print("🛑 SignalR disconnected.");
+      debugPrint('🛑 SignalR disconnected.');
     }
   }
 }

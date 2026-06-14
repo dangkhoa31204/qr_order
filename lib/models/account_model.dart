@@ -1,5 +1,5 @@
-/// Model đồng bộ với bảng [Accounts] trong QROrderingDB
-/// Role: 1 = Admin, 2 = Staff
+// Model đồng bộ với bảng [Accounts] trong QROrderingDB
+// Role: 1 = Admin, 2 = Staff
 
 enum AccountRole {
   admin(1, 'Admin'),

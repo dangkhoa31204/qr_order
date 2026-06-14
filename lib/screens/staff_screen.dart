@@ -77,8 +77,8 @@ class _StaffScreenState extends State<StaffScreen>
                     horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: widget.currentUser!.role == AccountRole.admin
-                      ? AromaColors.coffeeGold.withOpacity(0.9)
-                      : Colors.white.withOpacity(0.2),
+                      ? AromaColors.coffeeGold.withValues(alpha: 0.9)
+                      : Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -326,7 +326,7 @@ class _StaffScreenState extends State<StaffScreen>
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: order.status.color.withOpacity(0.12),
+                    color: order.status.color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -398,7 +398,7 @@ class _StaffScreenState extends State<StaffScreen>
                   ],
                 ),
               );
-            }).toList(),
+            }),
 
             if (order.note?.isNotEmpty == true) ...[
               const SizedBox(height: 8),
@@ -408,7 +408,7 @@ class _StaffScreenState extends State<StaffScreen>
                   color: AromaColors.coffeeCardLightBg,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: AromaColors.coffeeCardBorder.withOpacity(0.5),
+                    color: AromaColors.coffeeCardBorder.withValues(alpha: 0.5),
                   ),
                 ),
                 child: Row(
@@ -638,7 +638,7 @@ class _StaffScreenState extends State<StaffScreen>
                 Switch(
                   value: item.isAvailable,
                   onChanged: (valu) => widget.onToggleAvailability(item.menuItemId),
-                  activeColor: AromaColors.coffeePrimary,
+                  activeThumbColor: AromaColors.coffeePrimary,
                   activeTrackColor: AromaColors.coffeeSecondary,
                 ),
               ],

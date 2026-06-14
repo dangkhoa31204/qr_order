@@ -45,119 +45,95 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
     }
   }
 
+
+  // Admin only: add new table
   void _showAddTableDialog() {
     final capacityController = TextEditingController(text: '4');
 
     showDialog(
       context: context,
       builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              shape:
-                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              title: const Row(
-                children: [
-                  Text(
-                    "🍽️",
-                    style: TextStyle(fontSize: 24),
-                  ),
-                  SizedBox(width: 8),
-                  Text(
-                    "Thêm Bàn Mới",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: AromaColors.coffeeTextDark,
-                    ),
-                  ),
-                ],
-              ),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    TextField(
-                      controller: capacityController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: "Sức chứa (số lượng khách)",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        contentPadding: const EdgeInsets.all(12),
-                      ),
-                    ),
-                  ],
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Text("🍽️", style: TextStyle(fontSize: 24)),
+              SizedBox(width: 8),
+              Text(
+                "Thêm Bàn Mới",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: AromaColors.coffeeTextDark,
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    "Hủy",
-                    style: TextStyle(color: AromaColors.coffeeTextSub),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    final capacity = int.tryParse(capacityController.text.trim());
-                    if (capacity == null || capacity <= 0) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Sức chứa phải là số nguyên lớn hơn 0"),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                      return;
-                    }
-
-                    // Tự sinh ID tạm thời cho offline fallback
-                    int maxId = 0;
-                    for (var t in _tables) {
-                      if (t.tableId > maxId) maxId = t.tableId;
-                    }
-                    final tempId = maxId + 1;
-
-                    final newTable = TableModel(
-                      tableId: tempId,
-                      capacity: capacity,
-                      status: TableStatus.available,
-                    );
-
-                    widget.onAddTable(newTable);
-                    setState(() {
-                      _tables.add(newTable);
-                    });
-
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          "✅ Đã thêm bàn thành công (Sức chứa: $capacity)",
-                        ),
-                        backgroundColor: AromaColors.successGreen,
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AromaColors.coffeePrimary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextField(
+                  controller: capacityController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: "Sức chứa (số lượng khách)",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ),
-                  child: const Text(
-                    "Thêm",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    contentPadding: const EdgeInsets.all(12),
                   ),
                 ),
               ],
-            );
-          }
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Hủy", style: TextStyle(color: AromaColors.coffeeTextSub)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final capacity = int.tryParse(capacityController.text.trim());
+                if (capacity == null || capacity <= 0) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Sức chứa phải là số nguyên lớn hơn 0"),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+
+                int maxId = 0;
+                for (var t in _tables) {
+                  if (t.tableId > maxId) maxId = t.tableId;
+                }
+                final newTable = TableModel(
+                  tableId: maxId + 1,
+                  capacity: capacity,
+                  status: TableStatus.available,
+                );
+
+                widget.onAddTable(newTable);
+                setState(() => _tables.add(newTable));
+
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text("✅ Đã thêm bàn thành công (Sức chứa: $capacity)"),
+                    backgroundColor: AromaColors.successGreen,
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AromaColors.coffeePrimary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: const Text("Thêm", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
         );
       },
     );
@@ -234,7 +210,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<TableStatus>(
-                      value: status,
+                      initialValue: status,
                       decoration: InputDecoration(
                         labelText: "Trạng thái",
                         border: OutlineInputBorder(
@@ -452,6 +428,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
   }
 
   void _exportQrCode(TableModel table) async {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text("⏳ Đang lưu mã QR..."),
@@ -461,39 +438,34 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
 
     final success = await QrCodeGenerator.saveQrCode(table.tableId.toString(), table.label);
 
+    if (!mounted) return;
     if (success) {
       widget.onExportQrCode(table);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            "✅ Đã lưu mã QR cho ${table.label} vào thư mục Downloads",
-          ),
+          content: Text("✅ Đã lưu mã QR cho ${table.label} vào thư mục Downloads"),
           backgroundColor: AromaColors.successGreen,
         ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            "❌ Không thể lưu mã QR. Vui lòng kiểm tra quyền truy cập.",
-          ),
+          content: Text("❌ Không thể lưu mã QR. Vui lòng kiểm tra quyền truy cập."),
           backgroundColor: Colors.red,
         ),
       );
     }
   }
 
+  // Admin only: delete table
   void _deleteTable(TableModel table) {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Text("Xác Nhận Xóa"),
-          content: Text(
-            "Bạn có chắc chắn muốn xóa ${table.label}?",
-          ),
+          content: Text("Bạn có chắc chắn muốn xóa ${table.label}?"),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -502,9 +474,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
             ElevatedButton(
               onPressed: () {
                 widget.onDeleteTable(table.tableId);
-                setState(() {
-                  _tables.removeWhere((t) => t.tableId == table.tableId);
-                });
+                setState(() => _tables.removeWhere((t) => t.tableId == table.tableId));
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -513,19 +483,15 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                   ),
                 );
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-              ),
-              child: const Text(
-                "Xóa",
-                style: TextStyle(color: Colors.white),
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text("Xóa", style: TextStyle(color: Colors.white)),
             ),
           ],
         );
       },
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -656,7 +622,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: table.status.color.withOpacity(0.1),
+                                      color: table.status.color.withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(

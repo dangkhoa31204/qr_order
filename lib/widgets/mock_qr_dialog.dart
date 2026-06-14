@@ -127,9 +127,7 @@ class MockQrScannerDialog extends StatelessWidget {
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                            color: AromaColors.coffeeCardBorder.withOpacity(
-                              0.8,
-                            ),
+                           color: AromaColors.coffeeCardBorder.withValues(alpha: 0.8),
                           ),
                         ),
                         child: Row(
@@ -137,9 +135,7 @@ class MockQrScannerDialog extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: AromaColors.coffeeSecondary.withOpacity(
-                                  0.5,
-                                ),
+                                color: AromaColors.coffeeSecondary.withValues(alpha: 0.5),
                                 shape: BoxShape.circle,
                               ),
                               child: const Text(

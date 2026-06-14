@@ -1,12 +1,13 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/item_model.dart';
 import '../models/account_model.dart';
 
 class ApiService {
   // Configurable base URL — trỏ đến backend ASP.NET Core của bạn
-  static String baseUrl = "https://prm-backend-igqt.onrender.com"; 
-  static bool useMockFallback = false; // Đã có BE thật nên tắt Mock đi để test lỗi cho chính xác
+  static String baseUrl = "https://prm-backend-igqt.onrender.com";
+  static bool useMockFallback = false;
 
   // JWT Token lưu sau khi login thành công
   static String? _accessToken;
@@ -95,8 +96,6 @@ class ApiService {
   // ============================================================
 
   /// Login bằng API thật: POST /api/Auth/login
-  /// Request body: { "usernameOrEmail": "...", "password": "..." }
-  /// Response: LoginResponse { accessToken, expiresAt, username, role }
   static Future<LoginResult> login(String username, String password) async {
     try {
       final response = await http
@@ -113,18 +112,14 @@ class ApiService {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final loginResponse =
             LoginResponse.fromJson(jsonDecode(response.body));
-
-        // Lưu JWT token cho các request tiếp theo
         _accessToken = loginResponse.accessToken;
         _tokenExpiresAt = loginResponse.expiresAt;
-
         final account = loginResponse.toAccountModel();
         return LoginResult.success(account);
       } else if (response.statusCode == 401) {
         return LoginResult.failure(
             "Tên đăng nhập hoặc mật khẩu không chính xác");
       } else if (response.statusCode == 400) {
-        // Thử parse message lỗi từ server
         try {
           final body = jsonDecode(response.body);
           final message = body['message']?.toString() ??
@@ -139,7 +134,6 @@ class ApiService {
             "Lỗi máy chủ (${response.statusCode}). Vui lòng thử lại sau.");
       }
     } catch (e) {
-      // Không kết nối được server → thử mock fallback
       if (useMockFallback) {
         final match = _mockAccounts.where(
           (a) =>
@@ -166,17 +160,13 @@ class ApiService {
       final List rawList = result["data"];
       return rawList.map((item) => MenuItem.fromJson(item)).toList();
     } else {
-      print(
-        "ApiService.fetchMenuItems failed: ${result["error"]}. Utilizing mock fallback.",
-      );
+      debugPrint('ApiService.fetchMenuItems failed: ${result["error"]}. Utilizing mock fallback.');
       return _mockMenuItems;
     }
   }
 
   static Future<bool> createMenuItem(MenuItem item) async {
-    // Add to local mock list as fallback
     _mockMenuItems.add(item);
-
     try {
       final response = await http
           .post(
@@ -187,17 +177,15 @@ class ApiService {
           .timeout(const Duration(seconds: 10));
       return (response.statusCode >= 200 && response.statusCode < 300) || useMockFallback;
     } catch (_) {
-      return useMockFallback; // fallback success
+      return useMockFallback;
     }
   }
 
   static Future<bool> updateMenuItem(MenuItem item) async {
-    // Modify local mock list as fallback
     final idx = _mockMenuItems.indexWhere((it) => it.menuItemId == item.menuItemId);
     if (idx != -1) {
       _mockMenuItems[idx] = item;
     }
-
     try {
       final response = await http
           .put(
@@ -214,7 +202,6 @@ class ApiService {
 
   static Future<bool> deleteMenuItem(int menuItemId) async {
     _mockMenuItems.removeWhere((it) => it.menuItemId == menuItemId);
-
     try {
       final response = await http
           .delete(
@@ -236,7 +223,6 @@ class ApiService {
         isAvailable: !original.isAvailable,
       );
     }
-
     try {
       final response = await http
           .patch(
@@ -259,16 +245,13 @@ class ApiService {
       final List rawList = result["data"];
       return rawList.map((item) => OrderModel.fromJson(item)).toList();
     } else {
-      print(
-        "ApiService.fetchOrderQueue failed: ${result["error"]}. Utilizing mock fallback.",
-      );
+      debugPrint('ApiService.fetchOrderQueue failed: ${result["error"]}. Utilizing mock fallback.');
       return _mockOrderQueue;
     }
   }
 
   static Future<bool> submitOrder(OrderModel order) async {
     _mockOrderQueue.add(order);
-
     try {
       final response = await http
           .post(
@@ -339,10 +322,10 @@ class ApiService {
         }
       }
 
-      print("❌ Lỗi Cập Nhật Đơn ${orderId}: Server trả về ${lastResponse?.statusCode} - ${lastResponse?.body}");
+      debugPrint('❌ Lỗi Cập Nhật Đơn $orderId: Server trả về ${lastResponse?.statusCode} - ${lastResponse?.body}');
       return useMockFallback;
     } catch (e) {
-      print("❌ Lỗi Mạng Cập Nhật Đơn: $e");
+      debugPrint('❌ Lỗi Mạng Cập Nhật Đơn: $e');
       return useMockFallback;
     }
   }
@@ -358,15 +341,12 @@ class ApiService {
       final List rawList = result["data"];
       return rawList.map((item) => TableModel.fromJson(item)).toList();
     } else {
-      print(
-        "ApiService.fetchTables failed: ${result["error"]}. Utilizing mock fallback.",
-      );
+      debugPrint('ApiService.fetchTables failed: ${result["error"]}. Utilizing mock fallback.');
       return _mockTables;
     }
   }
 
   static Future<bool> createTable(TableModel table) async {
-    // Generate an auto-increment ID for offline fallback
     int maxId = 0;
     for (var t in _mockTables) {
       if (t.tableId > maxId) maxId = t.tableId;
@@ -438,7 +418,7 @@ class ApiService {
       final List rawList = result["data"];
       return rawList.map((item) => AccountModel.fromJson(item)).toList();
     } else {
-      print("ApiService.fetchStaffs failed: ${result["error"]}. Utilizing mock fallback.");
+      debugPrint('ApiService.fetchStaffs failed: ${result["error"]}. Utilizing mock fallback.');
       return _mockAccounts.where((a) => a.role == AccountRole.staff).toList();
     }
   }
