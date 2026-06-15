@@ -53,6 +53,9 @@ class _MainGateScreenState extends State<MainGateScreen> {
   List<TableModel> _tables = [];
   List<AccountModel> _staffs = [];
 
+  // Đếm đơn hoàn thành hôm nay (real-time qua SignalR)
+  int _completedTodayCount = 0;
+
   bool _isLoading = false;
 
   @override
@@ -185,12 +188,26 @@ class _MainGateScreenState extends State<MainGateScreen> {
     setState(() {
       _isLoggedIn = true;
       _currentUser = account;
+      _completedTodayCount = 0;
     });
     _loadBackendData();
     // Khởi tạo SignalR ngay sau khi login thành công
-    SignalRService.init(() {
-      _loadBackendData();
-    });
+    SignalRService.init(
+      () {
+        _loadBackendData();
+      },
+      onOrderStatusUpdated: (orderId, newStatus) {
+        // Tăng counter real-time khi staff hoàn thành đơn hàng
+        final status = newStatus.toLowerCase();
+        if (status == 'paid' || status == 'completed' || status == '4') {
+          if (mounted) {
+            setState(() => _completedTodayCount++);
+          }
+        }
+        // Reload để cập nhật danh sách đơn
+        _loadBackendData();
+      },
+    );
   }
 
   UserRole get _currentRole {
@@ -216,6 +233,7 @@ class _MainGateScreenState extends State<MainGateScreen> {
         menuItems: _menuItems,
         tables: _tables,
         staffs: _staffs,
+        completedTodayCount: _completedTodayCount,
         onUpdateOrderStatus: _updateOrderStatus,
         onToggleAvailability: _toggleAvailability,
         onCreateMenuItem: _createMenuItem,
@@ -235,6 +253,7 @@ class _MainGateScreenState extends State<MainGateScreen> {
           setState(() {
             _isLoggedIn = false;
             _currentUser = null;
+            _completedTodayCount = 0;
           });
         },
       );

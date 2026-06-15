@@ -78,7 +78,7 @@ class ApiService {
     try {
       final response = await http
           .get(Uri.parse("$baseUrl$path"), headers: _authHeaders)
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 30));
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return {"success": true, "data": jsonDecode(response.body)};
       }
@@ -107,7 +107,7 @@ class ApiService {
               "password": password,
             }),
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 60)); // Render.com cold start có thể mất 30-60s
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final loginResponse =

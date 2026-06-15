@@ -25,6 +25,7 @@ class AdminScreen extends StatefulWidget {
   final Function(int) onDeleteStaff;
   final AccountModel? currentUser;
   final VoidCallback onBackToGateway;
+  final int completedTodayCount; // Đếm real-time qua SignalR
 
   const AdminScreen({
     super.key,
@@ -32,6 +33,7 @@ class AdminScreen extends StatefulWidget {
     required this.menuItems,
     required this.tables,
     required this.staffs,
+    required this.completedTodayCount,
     required this.onUpdateOrderStatus,
     required this.onToggleAvailability,
     required this.onCreateMenuItem,
@@ -205,7 +207,46 @@ class _AdminScreenState extends State<AdminScreen>
               color: AromaColors.coffeePrimary,
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 8),
+          // Real-time badge
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AromaColors.coffeeGold.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AromaColors.coffeeGold.withValues(alpha: 0.4)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: const BoxDecoration(
+                        color: Colors.green,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    const Text(
+                      "SignalR live",
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: AromaColors.coffeePrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          // Real-time hôm nay (nổi bật)
+          _buildRealtimeCard(widget.completedTodayCount),
+          const SizedBox(height: 16),
           Row(
             children: [
               Expanded(child: _buildStatCard("Tuần này\n(7 ngày qua)", thisWeekCount, Icons.calendar_view_week)),

@@ -7,7 +7,12 @@ class SignalRService {
   static HubConnection? _hubConnection;
 
   /// Khởi tạo kết nối SignalR
-  static Future<void> init(Function onOrderCreated) async {
+  /// [onOrderCreated]        — gọi khi có đơn mới được tạo
+  /// [onOrderStatusUpdated]  — gọi khi trạng thái đơn thay đổi (kèm orderId & newStatus dạng String)
+  static Future<void> init(
+    Function onOrderCreated, {
+    Function(int orderId, String newStatus)? onOrderStatusUpdated,
+  }) async {
     if (_hubConnection != null &&
         _hubConnection!.state == HubConnectionState.Connected) {
       return; // Đã kết nối
@@ -30,6 +35,25 @@ class SignalRService {
       onOrderCreated();
     });
 
+    // Lắng nghe sự kiện OrderStatusUpdated — backend broadcast khi staff đổi trạng thái đơn
+    if (onOrderStatusUpdated != null) {
+      _hubConnection!.on("OrderStatusUpdated", (arguments) {
+        try {
+          // Backend gửi: [orderId (int), newStatus (string)]
+          final orderId = (arguments != null && arguments.isNotEmpty)
+              ? (arguments[0] as num?)?.toInt() ?? -1
+              : -1;
+          final newStatus = (arguments != null && arguments.length > 1)
+              ? arguments[1]?.toString() ?? ''
+              : '';
+          debugPrint('🔔 SignalR received: OrderStatusUpdated orderId=$orderId status=$newStatus');
+          onOrderStatusUpdated(orderId, newStatus);
+        } catch (e) {
+          debugPrint('❌ SignalR OrderStatusUpdated parse error: $e');
+        }
+      });
+    }
+
     try {
       await _hubConnection!.start();
       debugPrint('✅ SignalR connected successfully to $serverUrl');
@@ -47,3 +71,4 @@ class SignalRService {
     }
   }
 }
+
