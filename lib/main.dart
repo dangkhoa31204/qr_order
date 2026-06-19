@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'constants.dart';
 import 'models/item_model.dart';
 import 'models/account_model.dart';
+import 'models/feedback_model.dart';
 import 'services/api_service.dart';
 import 'services/signalr_service.dart';
 import 'screens/login_screen.dart';
@@ -52,6 +53,7 @@ class _MainGateScreenState extends State<MainGateScreen> {
   List<OrderModel> _orderQueue = [];
   List<TableModel> _tables = [];
   List<AccountModel> _staffs = [];
+  List<FeedbackModel> _feedbacks = [];
 
   // Đếm đơn hoàn thành hôm nay (real-time qua SignalR)
   int _completedTodayCount = 0;
@@ -75,12 +77,16 @@ class _MainGateScreenState extends State<MainGateScreen> {
       final staffs = _currentRole == UserRole.admin
           ? await ApiService.fetchStaffs()
           : <AccountModel>[];
+      final feedbacks = _currentRole == UserRole.admin
+          ? await ApiService.fetchFeedbacks()
+          : <FeedbackModel>[];
 
       setState(() {
         _menuItems = menu;
         _orderQueue = orders;
         _tables = tables;
         _staffs = staffs;
+        _feedbacks = feedbacks;
       });
     } catch (e) {
       debugPrint('Error loading backend data: $e');
@@ -184,6 +190,13 @@ class _MainGateScreenState extends State<MainGateScreen> {
     }
   }
 
+  Future<void> _toggleFeedbackVisibility(int feedbackId) async {
+    final success = await ApiService.toggleFeedbackVisibility(feedbackId);
+    if (success) {
+      _loadBackendData();
+    }
+  }
+
   void _handleLogin(AccountModel account) {
     setState(() {
       _isLoggedIn = true;
@@ -233,6 +246,7 @@ class _MainGateScreenState extends State<MainGateScreen> {
         menuItems: _menuItems,
         tables: _tables,
         staffs: _staffs,
+        feedbacks: _feedbacks,
         completedTodayCount: _completedTodayCount,
         onUpdateOrderStatus: _updateOrderStatus,
         onToggleAvailability: _toggleAvailability,
@@ -245,6 +259,7 @@ class _MainGateScreenState extends State<MainGateScreen> {
         onCreateStaff: _createStaff,
         onUpdateStaff: _updateStaff,
         onDeleteStaff: _deleteStaff,
+        onToggleFeedbackVisibility: _toggleFeedbackVisibility,
         onExportQrCode: _exportQrCode,
         currentUser: _currentUser,
         onBackToGateway: () {

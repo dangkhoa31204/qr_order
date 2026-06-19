@@ -113,12 +113,14 @@ class LoginResponse {
   final DateTime expiresAt;
   final String username;
   final int role;
+  final int accountId;
 
   LoginResponse({
     required this.accessToken,
     required this.expiresAt,
     required this.username,
     required this.role,
+    required this.accountId,
   });
 
   factory LoginResponse.fromJson(Map<String, dynamic> json) {
@@ -131,13 +133,14 @@ class LoginResponse {
       role: json['role'] != null 
           ? (int.tryParse(json['role'].toString()) ?? 2)
           : 2,
+      accountId: json['accountId'] as int? ?? 0,
     );
   }
 
   /// Chuyển LoginResponse thành AccountModel để sử dụng trong app
   AccountModel toAccountModel() {
     return AccountModel(
-      accountId: 0,
+      accountId: accountId,
       username: username,
       email: '',
       passwordHash: '',

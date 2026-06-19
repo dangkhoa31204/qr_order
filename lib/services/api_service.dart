@@ -3,10 +3,11 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/item_model.dart';
 import '../models/account_model.dart';
+import '../models/feedback_model.dart';
 
 class ApiService {
   // Configurable base URL — trỏ đến backend ASP.NET Core của bạn
-  static String baseUrl = "https://prm-backend-igqt.onrender.com";
+  static String baseUrl = "https://prm-gateway.onrender.com";
   static bool useMockFallback = false;
 
   // JWT Token lưu sau khi login thành công
@@ -100,7 +101,7 @@ class ApiService {
     try {
       final response = await http
           .post(
-            Uri.parse("$baseUrl/api/Auth/login"),
+            Uri.parse("$baseUrl/api/auth/login"),
             headers: {"Content-Type": "application/json"},
             body: jsonEncode({
               "usernameOrEmail": username,
@@ -155,7 +156,8 @@ class ApiService {
   // 1. MENU API CALLS
   // ============================================================
   static Future<List<MenuItem>> fetchMenuItems() async {
-    final result = await _safeGet("/api/Menu");
+    final path = _accessToken != null ? "/api/menu/all" : "/api/menu";
+    final result = await _safeGet(path);
     if (result["success"] == true) {
       final List rawList = result["data"];
       return rawList.map((item) => MenuItem.fromJson(item)).toList();
@@ -170,7 +172,7 @@ class ApiService {
     try {
       final response = await http
           .post(
-            Uri.parse("$baseUrl/api/Menu"),
+            Uri.parse("$baseUrl/api/menu"),
             headers: _authHeaders,
             body: jsonEncode(item.toJson()),
           )
@@ -189,7 +191,7 @@ class ApiService {
     try {
       final response = await http
           .put(
-            Uri.parse("$baseUrl/api/Menu/${item.menuItemId}"),
+            Uri.parse("$baseUrl/api/menu/${item.menuItemId}"),
             headers: _authHeaders,
             body: jsonEncode(item.toJson()),
           )
@@ -205,7 +207,7 @@ class ApiService {
     try {
       final response = await http
           .delete(
-            Uri.parse("$baseUrl/api/Menu/$menuItemId"),
+            Uri.parse("$baseUrl/api/menu/$menuItemId"),
             headers: _authHeaders,
           )
           .timeout(const Duration(seconds: 10));
@@ -226,7 +228,7 @@ class ApiService {
     try {
       final response = await http
           .patch(
-            Uri.parse("$baseUrl/api/Menu/$menuItemId/toggle-availability"),
+            Uri.parse("$baseUrl/api/menu/$menuItemId/toggle-availability"),
             headers: _authHeaders,
           )
           .timeout(const Duration(seconds: 10));
@@ -240,7 +242,7 @@ class ApiService {
   // 2. ORDER QUEUE API CALLS
   // ============================================================
   static Future<List<OrderModel>> fetchOrderQueue() async {
-    final result = await _safeGet("/api/Orders");
+    final result = await _safeGet("/api/orders");
     if (result["success"] == true) {
       final List rawList = result["data"];
       return rawList.map((item) => OrderModel.fromJson(item)).toList();
@@ -255,7 +257,7 @@ class ApiService {
     try {
       final response = await http
           .post(
-            Uri.parse("$baseUrl/api/Orders"),
+            Uri.parse("$baseUrl/api/orders"),
             headers: _authHeaders,
             body: jsonEncode(order.toJson()),
           )
@@ -277,7 +279,7 @@ class ApiService {
 
     if (_accessToken == null && useMockFallback) return true;
 
-    final uri = Uri.parse("$baseUrl/api/Orders/$orderId/status");
+    final uri = Uri.parse("$baseUrl/api/orders/$orderId/status");
     final payloads = [
       {"status": status.value},
       {"status": status.valueString},
@@ -336,7 +338,7 @@ class ApiService {
   static final List<TableModel> _mockTables = List.from(systemTables);
 
   static Future<List<TableModel>> fetchTables() async {
-    final result = await _safeGet("/api/Tables");
+    final result = await _safeGet("/api/tables");
     if (result["success"] == true) {
       final List rawList = result["data"];
       return rawList.map((item) => TableModel.fromJson(item)).toList();
@@ -357,7 +359,7 @@ class ApiService {
     try {
       final response = await http
           .post(
-            Uri.parse("$baseUrl/api/Tables"),
+            Uri.parse("$baseUrl/api/tables"),
             headers: _authHeaders,
             body: jsonEncode({
               "capacity": table.capacity,
@@ -379,7 +381,7 @@ class ApiService {
     try {
       final response = await http
           .put(
-            Uri.parse("$baseUrl/api/Tables/${table.tableId}"),
+            Uri.parse("$baseUrl/api/tables/${table.tableId}"),
             headers: _authHeaders,
             body: jsonEncode({
               "capacity": table.capacity,
@@ -399,7 +401,7 @@ class ApiService {
     try {
       final response = await http
           .delete(
-            Uri.parse("$baseUrl/api/Tables/$tableId"),
+            Uri.parse("$baseUrl/api/tables/$tableId"),
             headers: _authHeaders,
           )
           .timeout(const Duration(seconds: 10));
@@ -413,7 +415,7 @@ class ApiService {
   // 4. STAFF ACCOUNT API CALLS (Admin Only)
   // ============================================================
   static Future<List<AccountModel>> fetchStaffs() async {
-    final result = await _safeGet("/api/Auth/staff");
+    final result = await _safeGet("/api/auth/staff");
     if (result["success"] == true) {
       final List rawList = result["data"];
       return rawList.map((item) => AccountModel.fromJson(item)).toList();
@@ -434,7 +436,7 @@ class ApiService {
     try {
       final response = await http
           .post(
-            Uri.parse("$baseUrl/api/Auth/admin-create"),
+            Uri.parse("$baseUrl/api/auth/admin-create"),
             headers: _authHeaders,
             body: jsonEncode({
               "username": staff.username,
@@ -460,7 +462,7 @@ class ApiService {
     try {
       final response = await http
           .put(
-            Uri.parse("$baseUrl/api/Auth/accounts/${staff.accountId}"),
+            Uri.parse("$baseUrl/api/auth/accounts/${staff.accountId}"),
             headers: _authHeaders,
             body: jsonEncode({
               "username": staff.username,
@@ -486,7 +488,70 @@ class ApiService {
     try {
       final response = await http
           .delete(
-            Uri.parse("$baseUrl/api/Auth/accounts/$accountId"),
+            Uri.parse("$baseUrl/api/auth/accounts/$accountId"),
+            headers: _authHeaders,
+          )
+          .timeout(const Duration(seconds: 10));
+      return (response.statusCode >= 200 && response.statusCode < 300) || useMockFallback;
+    } catch (_) {
+      return useMockFallback;
+    }
+  }
+
+  // ============================================================
+  // 5. FEEDBACK API CALLS (Admin Only)
+  // ============================================================
+  static final List<FeedbackModel> _mockFeedbacks = [
+    FeedbackModel(
+      feedbackId: 1,
+      orderId: 1,
+      tableId: 8,
+      rating: 5,
+      comment: "Đồ uống rất ngon, phục vụ nhanh!",
+      isHidden: false,
+      createdAt: DateTime.now().subtract(const Duration(hours: 2)),
+    ),
+    FeedbackModel(
+      feedbackId: 2,
+      orderId: 2,
+      tableId: 2,
+      rating: 3,
+      comment: "Cà phê hơi ngọt so với khẩu vị của mình.",
+      isHidden: false,
+      createdAt: DateTime.now().subtract(const Duration(hours: 5)),
+    ),
+  ];
+
+  static Future<List<FeedbackModel>> fetchFeedbacks() async {
+    final result = await _safeGet("/api/feedbacks");
+    if (result["success"] == true) {
+      final List rawList = result["data"];
+      return rawList.map((item) => FeedbackModel.fromJson(item)).toList();
+    } else {
+      debugPrint('ApiService.fetchFeedbacks failed: ${result["error"]}. Utilizing mock fallback.');
+      return _mockFeedbacks;
+    }
+  }
+
+  static Future<bool> toggleFeedbackVisibility(int feedbackId) async {
+    final idx = _mockFeedbacks.indexWhere((f) => f.feedbackId == feedbackId);
+    if (idx != -1) {
+      final original = _mockFeedbacks[idx];
+      _mockFeedbacks[idx] = FeedbackModel(
+        feedbackId: original.feedbackId,
+        orderId: original.orderId,
+        tableId: original.tableId,
+        rating: original.rating,
+        comment: original.comment,
+        isHidden: !original.isHidden,
+        createdAt: original.createdAt,
+      );
+    }
+
+    try {
+      final response = await http
+          .patch(
+            Uri.parse("$baseUrl/api/feedbacks/$feedbackId/visibility"),
             headers: _authHeaders,
           )
           .timeout(const Duration(seconds: 10));

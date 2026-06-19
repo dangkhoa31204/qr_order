@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import '../constants.dart';
 import '../models/item_model.dart';
 import '../models/account_model.dart';
+import '../models/feedback_model.dart';
 import 'table_management_screen.dart';
 
 class AdminScreen extends StatefulWidget {
@@ -11,6 +12,7 @@ class AdminScreen extends StatefulWidget {
   final List<MenuItem> menuItems;
   final List<TableModel> tables;
   final List<AccountModel> staffs;
+  final List<FeedbackModel> feedbacks;
   final Function(int, OrderStatus) onUpdateOrderStatus;
   final Function(int) onToggleAvailability;
   final Function(MenuItem) onCreateMenuItem;
@@ -23,6 +25,7 @@ class AdminScreen extends StatefulWidget {
   final Function(AccountModel, String) onCreateStaff;
   final Function(AccountModel) onUpdateStaff;
   final Function(int) onDeleteStaff;
+  final Function(int) onToggleFeedbackVisibility;
   final AccountModel? currentUser;
   final VoidCallback onBackToGateway;
   final int completedTodayCount; // Đếm real-time qua SignalR
@@ -33,6 +36,7 @@ class AdminScreen extends StatefulWidget {
     required this.menuItems,
     required this.tables,
     required this.staffs,
+    required this.feedbacks,
     required this.completedTodayCount,
     required this.onUpdateOrderStatus,
     required this.onToggleAvailability,
@@ -46,6 +50,7 @@ class AdminScreen extends StatefulWidget {
     required this.onCreateStaff,
     required this.onUpdateStaff,
     required this.onDeleteStaff,
+    required this.onToggleFeedbackVisibility,
     this.currentUser,
     required this.onBackToGateway,
   });
@@ -61,7 +66,7 @@ class _AdminScreenState extends State<AdminScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
   }
 
   @override
@@ -150,6 +155,7 @@ class _AdminScreenState extends State<AdminScreen>
             Tab(icon: Icon(Icons.people), text: "QUẢN LÝ NHÂN VIÊN"),
             Tab(icon: Icon(Icons.restaurant_menu), text: "QUẢN LÝ MENU"),
             Tab(icon: Icon(Icons.table_restaurant), text: "QUẢN LÝ BÀN"),
+            Tab(icon: Icon(Icons.rate_review), text: "PHẢN HỒI"),
           ],
         ),
       ),
@@ -166,6 +172,7 @@ class _AdminScreenState extends State<AdminScreen>
             onDeleteTable: widget.onDeleteTable,
             onExportQrCode: widget.onExportQrCode,
           ),
+          _buildFeedbackTab(),
         ],
       ),
     );
@@ -286,6 +293,59 @@ class _AdminScreenState extends State<AdminScreen>
               style: const TextStyle(
                 fontSize: 12,
                 color: AromaColors.coffeeTextSub,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRealtimeCard(int count) {
+    return Card(
+      elevation: 3,
+      shadowColor: AromaColors.coffeePrimary.withValues(alpha: 0.2),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      color: AromaColors.coffeePrimary,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "ĐƠN HOÀN THÀNH (HÔM NAY)",
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white70,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    count.toString(),
+                    style: const TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.trending_up_rounded,
+                color: AromaColors.coffeeGold,
+                size: 32,
               ),
             ),
           ],
@@ -430,6 +490,177 @@ class _AdminScreenState extends State<AdminScreen>
         ),
       ),
     );
+  }
+
+  // --- TAB 5: Feedback Management ---
+  Widget _buildFeedbackTab() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "TỔNG CỘNG: ${widget.feedbacks.length} PHẢN HỒI",
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: AromaColors.coffeeTextSub,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: widget.feedbacks.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.rate_review_outlined,
+                        size: 64,
+                        color: AromaColors.coffeeTextSub.withValues(alpha: 0.4),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        "Chưa có phản hồi nào từ khách hàng",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AromaColors.coffeeTextSub,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  itemCount: widget.feedbacks.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 14),
+                  itemBuilder: (context, index) {
+                    return _buildFeedbackCard(widget.feedbacks[index]);
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFeedbackCard(FeedbackModel fb) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: AromaColors.coffeeCardBorder),
+      ),
+      color: fb.isHidden ? Colors.grey[200] : Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: AromaColors.coffeePrimary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        "Bàn #${fb.tableId}",
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: AromaColors.coffeePrimary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Đơn #${fb.orderId}",
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AromaColors.coffeeTextSub,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                // Show/Hide toggle
+                Row(
+                  children: [
+                    if (fb.isHidden)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.redAccent.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text(
+                          "Đã ẩn",
+                          style: TextStyle(fontSize: 10, color: Colors.red, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    const SizedBox(width: 6),
+                    Switch(
+                      value: !fb.isHidden,
+                      onChanged: (_) => widget.onToggleFeedbackVisibility(fb.feedbackId),
+                      activeThumbColor: AromaColors.coffeePrimary,
+                      activeTrackColor: AromaColors.coffeeSecondary,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: List.generate(5, (starIndex) {
+                return Icon(
+                  starIndex < fb.rating ? Icons.star_rounded : Icons.star_border_rounded,
+                  color: starIndex < fb.rating ? AromaColors.coffeeGold : Colors.grey[400],
+                  size: 20,
+                );
+              }),
+            ),
+            if (fb.comment != null && fb.comment!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                fb.comment!,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: fb.isHidden ? AromaColors.coffeeTextDark.withValues(alpha: 0.5) : AromaColors.coffeeTextDark,
+                  height: 1.4,
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.bottomRight,
+              child: Text(
+                _formatDateTime(fb.createdAt),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AromaColors.coffeeTextSub.withValues(alpha: 0.7),
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDateTime(DateTime dt) {
+    final local = dt.toLocal();
+    String pad(int n) => n.toString().padLeft(2, '0');
+    return "${pad(local.hour)}:${pad(local.minute)} - ${pad(local.day)}/${pad(local.month)}/${local.year}";
   }
 
   // --- TAB 2: Menu catalog management ---
