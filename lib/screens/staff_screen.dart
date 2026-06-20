@@ -1,8 +1,11 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import '../constants.dart';
 import '../models/item_model.dart';
 import '../models/account_model.dart';
+import '../services/api_service.dart';
 import 'table_management_screen.dart';
 
 class StaffScreen extends StatefulWidget {
@@ -36,6 +39,30 @@ class StaffScreen extends StatefulWidget {
 class _StaffScreenState extends State<StaffScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  int? _activeQrOrderId;
+
+  @override
+  void didUpdateWidget(StaffScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_activeQrOrderId != null) {
+      final order = widget.orders.firstWhere(
+        (o) => o.orderId == _activeQrOrderId,
+        orElse: () => OrderModel(orderId: -1, tableId: -1),
+      );
+      if (order.orderId == -1 || order.status == OrderStatus.paid) {
+        _activeQrOrderId = null;
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("✅ Đơn hàng đã được thanh toán thành công qua Sepay!"),
+            backgroundColor: AromaColors.successGreen,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -461,28 +488,65 @@ class _StaffScreenState extends State<StaffScreen>
             // Action push button
             if (nextStatus != null) ...[
               const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () =>
-                    widget.onUpdateOrderStatus(order.orderId, nextStatus!),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: order.status.color,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+              if (order.status == OrderStatus.ready) ...[
+                ElevatedButton(
+                  onPressed: () => _showSepayQrDialog(order),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AromaColors.preparingBlue,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    minimumSize: const Size(double.infinity, 44),
+                    elevation: 0,
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  minimumSize: const Size(double.infinity, 44),
-                  elevation: 0,
-                ),
-                child: Text(
-                  mainActionText,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                    letterSpacing: 0.5,
+                  child: const Text(
+                    "💵 THANH TOÁN QR (SEPAY)",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      letterSpacing: 0.5,
+                    ),
                   ),
                 ),
-              ),
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  onPressed: () =>
+                      widget.onUpdateOrderStatus(order.orderId, nextStatus!),
+                  icon: const Icon(Icons.money, size: 16),
+                  label: const Text(
+                    "Xác nhận thanh toán tiền mặt (Thủ công)",
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                  ),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AromaColors.coffeeTextSub,
+                  ),
+                ),
+              ] else ...[
+                ElevatedButton(
+                  onPressed: () =>
+                      widget.onUpdateOrderStatus(order.orderId, nextStatus!),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: order.status.color,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    minimumSize: const Size(double.infinity, 44),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    mainActionText,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ],
             ],
             if (order.status == OrderStatus.pending) ...[
               const SizedBox(height: 8),
@@ -646,6 +710,226 @@ class _StaffScreenState extends State<StaffScreen>
           ],
         ),
       ),
+    );
+  }
+
+  void _showSepayQrDialog(OrderModel order) {
+    setState(() {
+      _activeQrOrderId = order.orderId;
+    });
+
+    final qrUrl = "https://img.vietqr.io/image/"
+        "${SepayConfig.bankId}-${SepayConfig.accountNumber}-compact2.jpg"
+        "?amount=${order.totalAmount.toInt()}"
+        "&addInfo=AROMA${order.orderId}"
+        "&accountName=${Uri.encodeComponent(SepayConfig.accountName)}";
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Thanh toán QR qua Sepay",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: AromaColors.coffeeTextDark,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.grey),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const Divider(),
+                const SizedBox(height: 12),
+                
+                // QR code image container
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AromaColors.coffeeCardBorder),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 10,
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      qrUrl,
+                      width: 240,
+                      height: 240,
+                      fit: BoxFit.contain,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return const SizedBox(
+                          width: 240,
+                          height: 240,
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: AromaColors.coffeePrimary,
+                            ),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return const SizedBox(
+                          width: 240,
+                          height: 240,
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.error_outline, color: Colors.red, size: 40),
+                                SizedBox(height: 8),
+                                Text(
+                                  "Không tải được mã QR",
+                                  style: TextStyle(fontSize: 12, color: Colors.red),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Payment details
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AromaColors.coffeeCardLightBg,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AromaColors.coffeeCardBorder.withValues(alpha: 0.5)),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildQrDetailRow("Số tiền:", formatVND(order.totalAmount), isBoldValue: true),
+                      const SizedBox(height: 6),
+                      _buildQrDetailRow("Nội dung:", "AROMA${order.orderId}", isBoldValue: true, isSelectable: true),
+                      const SizedBox(height: 6),
+                      _buildQrDetailRow("Tài khoản:", SepayConfig.accountNumber),
+                      const SizedBox(height: 6),
+                      _buildQrDetailRow("Ngân hàng:", SepayConfig.bankId),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 20),
+                
+                // Waiting message
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AromaColors.successGreen,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      "Đang chờ khách thanh toán...",
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.green.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                
+                // Nút giả lập thanh toán phục vụ kiểm thử
+                TextButton.icon(
+                  onPressed: () async {
+                    try {
+                      final url = "${ApiService.baseUrl}/api/payments/sepay-webhook";
+                      final response = await http.post(
+                        Uri.parse(url),
+                        headers: {"Content-Type": "application/json"},
+                        body: jsonEncode({
+                          "transferAmount": order.totalAmount,
+                          "transferType": "in",
+                          "transactionContent": "AROMA${order.orderId}",
+                          "referenceNumber": "TEST_${DateTime.now().millisecondsSinceEpoch}"
+                        }),
+                      );
+                      if (response.statusCode >= 200 && response.statusCode < 300) {
+                        debugPrint("✅ Giả lập webhook thành công!");
+                      } else {
+                        debugPrint("❌ Giả lập thất bại: ${response.statusCode} - ${response.body}");
+                      }
+                    } catch (e) {
+                      debugPrint("❌ Lỗi mạng khi giả lập webhook: $e");
+                    }
+                  },
+                  icon: const Icon(Icons.bug_report, size: 16, color: Colors.orange),
+                  label: const Text(
+                    "Giả lập thanh toán thành công (Test)",
+                    style: TextStyle(fontSize: 11, color: Colors.orange, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(height: 4),
+              ],
+            ),
+          ),
+        );
+      },
+    ).then((_) {
+      _activeQrOrderId = null;
+    });
+  }
+
+  Widget _buildQrDetailRow(String label, String value, {bool isBoldValue = false, bool isSelectable = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: AromaColors.coffeeTextSub),
+        ),
+        isSelectable
+            ? SelectableText(
+                value,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isBoldValue ? FontWeight.bold : FontWeight.normal,
+                  color: AromaColors.coffeeTextDark,
+                ),
+              )
+            : Text(
+                value,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isBoldValue ? FontWeight.bold : FontWeight.normal,
+                  color: AromaColors.coffeeTextDark,
+                ),
+              ),
+      ],
     );
   }
 }

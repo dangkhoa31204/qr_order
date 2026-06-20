@@ -22,3 +22,9 @@ enum UserRole {
   staff,
   customer, // Chỉ dùng cho luồng customer QR, không lưu DB
 }
+
+class SepayConfig {
+  static const String bankId = "MB"; // Ví dụ: MB, VCB, ACB, VietinBank...
+  static const String accountNumber = "123456789"; // Số tài khoản ngân hàng của bạn
+  static const String accountName = "NGUYEN VAN A"; // Họ và tên viết hoa không dấu
+}
