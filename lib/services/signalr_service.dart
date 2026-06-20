@@ -39,15 +39,28 @@ class SignalRService {
     if (onOrderStatusUpdated != null) {
       _hubConnection!.on("OrderStatusUpdated", (arguments) {
         try {
-          // Backend gửi: [orderId (int), newStatus (string)]
-          final orderId = (arguments != null && arguments.isNotEmpty)
-              ? (arguments[0] as num?)?.toInt() ?? -1
-              : -1;
-          final newStatus = (arguments != null && arguments.length > 1)
-              ? arguments[1]?.toString() ?? ''
-              : '';
-          debugPrint('🔔 SignalR received: OrderStatusUpdated orderId=$orderId status=$newStatus');
-          onOrderStatusUpdated(orderId, newStatus);
+          debugPrint('🔔 SignalR received raw arguments: $arguments');
+          if (arguments == null || arguments.isEmpty) return;
+
+          int orderId = -1;
+          String newStatus = '';
+
+          final firstArg = arguments[0];
+          if (firstArg is Map) {
+            // Trường hợp backend gửi nguyên Object OrderResponse
+            orderId = firstArg['orderId'] as int? ?? firstArg['OrderId'] as int? ?? -1;
+            final statusVal = firstArg['status'] ?? firstArg['Status'];
+            newStatus = statusVal?.toString() ?? '';
+          } else if (firstArg is num) {
+            // Trường hợp backend gửi 2 tham số: [orderId, newStatus]
+            orderId = firstArg.toInt();
+            newStatus = (arguments.length > 1) ? arguments[1]?.toString() ?? '' : '';
+          }
+
+          debugPrint('🔔 SignalR parsed: OrderStatusUpdated orderId=$orderId status=$newStatus');
+          if (orderId != -1) {
+            onOrderStatusUpdated(orderId, newStatus);
+          }
         } catch (e) {
           debugPrint('❌ SignalR OrderStatusUpdated parse error: $e');
         }
