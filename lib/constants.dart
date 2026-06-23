@@ -24,7 +24,7 @@ enum UserRole {
 }
 
 class SepayConfig {
-  static const String bankId = "TPB"; // Ngân hàng TPBank
-  static const String accountNumber = "90784267027"; // Số tài khoản ngân hàng của bạn
-  static const String accountName = "DANG MINH QUAN"; // Họ và tên viết hoa không dấu
+  static const String bankId = String.fromEnvironment('SEPAY_BANK_ID', defaultValue: "TPB"); // Ngân hàng TPBank
+  static const String accountNumber = String.fromEnvironment('SEPAY_ACCOUNT_NUMBER', defaultValue: "90784267027"); // Số tài khoản ngân hàng của bạn
+  static const String accountName = String.fromEnvironment('SEPAY_ACCOUNT_NAME', defaultValue: "DANG MINH QUAN"); // Họ và tên viết hoa không dấu
 }
