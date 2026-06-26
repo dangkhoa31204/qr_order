@@ -411,8 +411,13 @@ class ApiService {
             }),
           )
           .timeout(const Duration(seconds: 10));
-      return (response.statusCode >= 200 && response.statusCode < 300) || useMockFallback;
-    } catch (_) {
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return true;
+      }
+      debugPrint("❌ Lỗi Cập Nhật Bàn ${table.tableId}: Server trả về ${response.statusCode} - ${response.body}");
+      return useMockFallback;
+    } catch (e) {
+      debugPrint("❌ Lỗi Mạng Cập Nhật Bàn: $e");
       return useMockFallback;
     }
   }
@@ -427,8 +432,13 @@ class ApiService {
             headers: _authHeaders,
           )
           .timeout(const Duration(seconds: 10));
-      return (response.statusCode >= 200 && response.statusCode < 300) || useMockFallback;
-    } catch (_) {
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return true;
+      }
+      debugPrint("❌ Lỗi Xóa Bàn $tableId: Server trả về ${response.statusCode} - ${response.body}");
+      return useMockFallback;
+    } catch (e) {
+      debugPrint("❌ Lỗi Mạng Xóa Bàn: $e");
       return useMockFallback;
     }
   }
