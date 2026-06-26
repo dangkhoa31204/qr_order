@@ -41,29 +41,7 @@ class ApiService {
 
   // In-memory cache for mock data when C# server is offline
   static final List<MenuItem> _mockMenuItems = List.from(initialMenuItems);
-  static final List<OrderModel> _mockOrderQueue = [
-    OrderModel(
-      orderId: 1,
-      tableId: 8,
-      items: [
-        OrderItemModel(
-          menuItemId: 1,
-          quantity: 1,
-          unitPrice: 30000,
-          menuItemRef: initialMenuItems.firstWhere((it) => it.menuItemId == 1),
-        ),
-        OrderItemModel(
-          menuItemId: 2,
-          quantity: 2,
-          unitPrice: 45000,
-          menuItemRef: initialMenuItems.firstWhere((it) => it.menuItemId == 2),
-        ),
-      ],
-      status: OrderStatus.preparing,
-      totalAmount: 120000,
-      note: "Latte ít đường, Espresso nóng",
-    ),
-  ];
+  static final List<OrderModel> _mockOrderQueue = [];
 
   // Mock accounts khớp DB seed
   static final List<AccountModel> _mockAccounts = [
