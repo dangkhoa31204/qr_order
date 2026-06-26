@@ -18,6 +18,7 @@ class StaffScreen extends StatefulWidget {
   final Function(TableModel) onExportQrCode;
   final AccountModel? currentUser;
   final VoidCallback onBackToGateway;
+  final VoidCallback onRefreshData;
 
   const StaffScreen({
     super.key,
@@ -30,6 +31,7 @@ class StaffScreen extends StatefulWidget {
     required this.onExportQrCode,
     this.currentUser,
     required this.onBackToGateway,
+    required this.onRefreshData,
   });
 
   @override
@@ -172,6 +174,7 @@ class _StaffScreenState extends State<StaffScreen>
             onDeleteTable: (_) {},
             onExportQrCode: widget.onExportQrCode,
             isStaff: true,
+            onRefreshData: widget.onRefreshData,
           ),
         ],
       ),
@@ -574,13 +577,23 @@ class _StaffScreenState extends State<StaffScreen>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                "TỔNG CỘNG: ${widget.menuItems.length} MÓN ĂN",
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: AromaColors.coffeeTextSub,
-                ),
+              Row(
+                children: [
+                  Text(
+                    "TỔNG CỘNG: ${widget.menuItems.length} MÓN ĂN",
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: AromaColors.coffeeTextSub,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: widget.onRefreshData,
+                    icon: const Icon(Icons.refresh, size: 18, color: AromaColors.coffeePrimary),
+                    tooltip: "Tải lại",
+                  ),
+                ],
               ),
             ],
           ),

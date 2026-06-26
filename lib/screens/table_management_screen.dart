@@ -11,6 +11,7 @@ class TableManagementScreen extends StatefulWidget {
   final Function(int) onDeleteTable;
   final Function(TableModel) onExportQrCode;
   final bool isStaff;
+  final VoidCallback? onRefreshData;
 
   const TableManagementScreen({
     super.key,
@@ -20,6 +21,7 @@ class TableManagementScreen extends StatefulWidget {
     required this.onDeleteTable,
     required this.onExportQrCode,
     this.isStaff = false,
+    this.onRefreshData,
   });
 
   @override
@@ -502,13 +504,25 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                "Danh Sách Bàn",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AromaColors.coffeeTextDark,
-                ),
+              Row(
+                children: [
+                  const Text(
+                    "Danh Sách Bàn",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AromaColors.coffeeTextDark,
+                    ),
+                  ),
+                  if (widget.onRefreshData != null) ...[
+                    const SizedBox(width: 8),
+                    IconButton(
+                      onPressed: widget.onRefreshData,
+                      icon: const Icon(Icons.refresh, size: 18, color: AromaColors.coffeePrimary),
+                      tooltip: "Tải lại",
+                    ),
+                  ],
+                ],
               ),
               if (!widget.isStaff)
                 ElevatedButton.icon(

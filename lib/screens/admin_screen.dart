@@ -29,6 +29,7 @@ class AdminScreen extends StatefulWidget {
   final AccountModel? currentUser;
   final VoidCallback onBackToGateway;
   final int completedTodayCount; // Đếm real-time qua SignalR
+  final VoidCallback onRefreshData;
 
   const AdminScreen({
     super.key,
@@ -53,6 +54,7 @@ class AdminScreen extends StatefulWidget {
     required this.onToggleFeedbackVisibility,
     this.currentUser,
     required this.onBackToGateway,
+    required this.onRefreshData,
   });
 
   @override
@@ -171,6 +173,7 @@ class _AdminScreenState extends State<AdminScreen>
             onUpdateTable: widget.onUpdateTable,
             onDeleteTable: widget.onDeleteTable,
             onExportQrCode: widget.onExportQrCode,
+            onRefreshData: widget.onRefreshData,
           ),
           _buildFeedbackTab(),
         ],
@@ -364,13 +367,23 @@ class _AdminScreenState extends State<AdminScreen>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                "TỔNG CỘNG: ${staffList.length} NHÂN VIÊN",
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: AromaColors.coffeeTextSub,
-                ),
+              Row(
+                children: [
+                  Text(
+                    "TỔNG CỘNG: ${staffList.length} NHÂN VIÊN",
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: AromaColors.coffeeTextSub,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: widget.onRefreshData,
+                    icon: const Icon(Icons.refresh, size: 18, color: AromaColors.coffeePrimary),
+                    tooltip: "Tải lại",
+                  ),
+                ],
               ),
               ElevatedButton.icon(
                 onPressed: () => _showAddStaffDialog(context),
@@ -673,13 +686,23 @@ class _AdminScreenState extends State<AdminScreen>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                "TỔNG CỘNG: ${widget.menuItems.length} MÓN ĂN",
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: AromaColors.coffeeTextSub,
-                ),
+              Row(
+                children: [
+                  Text(
+                    "TỔNG CỘNG: ${widget.menuItems.length} MÓN ĂN",
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: AromaColors.coffeeTextSub,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: widget.onRefreshData,
+                    icon: const Icon(Icons.refresh, size: 18, color: AromaColors.coffeePrimary),
+                    tooltip: "Tải lại",
+                  ),
+                ],
               ),
               ElevatedButton.icon(
                 onPressed: () => _showAddMenuItemDialog(context),

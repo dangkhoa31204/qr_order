@@ -95,6 +95,40 @@ class _MainGateScreenState extends State<MainGateScreen> {
     }
   }
 
+  Future<void> _handleManualRefresh() async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(width: 12),
+            Text("Đang tải dữ liệu..."),
+          ],
+        ),
+        duration: Duration(milliseconds: 800),
+        backgroundColor: AromaColors.coffeePrimary,
+      ),
+    );
+    await _loadBackendData();
+    if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("✅ Đã cập nhật dữ liệu mới nhất!"),
+          duration: Duration(seconds: 1),
+          backgroundColor: AromaColors.successGreen,
+        ),
+      );
+    }
+  }
+
   // --- ACTIONS ---
 
   // Kitchen Status advanced progression
@@ -271,6 +305,7 @@ class _MainGateScreenState extends State<MainGateScreen> {
             _completedTodayCount = 0;
           });
         },
+        onRefreshData: _handleManualRefresh,
       );
     }
 
@@ -292,6 +327,7 @@ class _MainGateScreenState extends State<MainGateScreen> {
           _currentUser = null;
         });
       },
+      onRefreshData: _handleManualRefresh,
     );
   }
 }
