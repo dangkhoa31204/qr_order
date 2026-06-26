@@ -167,14 +167,49 @@ class ApiService {
     }
   }
 
+  static Future<String?> uploadImage(String filePath) async {
+    try {
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse("$baseUrl/api/menu/upload-image"),
+      );
+      if (_accessToken != null && _accessToken!.isNotEmpty) {
+        request.headers["Authorization"] = "Bearer $_accessToken";
+      }
+      request.files.add(await http.MultipartFile.fromPath('file', filePath));
+      
+      final streamedResponse = await request.send().timeout(const Duration(seconds: 20));
+      final response = await http.Response.fromStream(streamedResponse);
+      
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final decoded = jsonDecode(response.body);
+        return decoded["imageUrl"] as String?;
+      } else {
+        debugPrint("Upload image failed with status: ${response.statusCode}, body: ${response.body}");
+      }
+    } catch (e) {
+      debugPrint("Error uploading image: $e");
+    }
+    return null;
+  }
+
   static Future<bool> createMenuItem(MenuItem item) async {
-    _mockMenuItems.add(item);
+    var finalItem = item;
+    if (item.imageUrl != null && item.imageUrl!.isNotEmpty && !item.imageUrl!.startsWith('http')) {
+      final uploadedUrl = await uploadImage(item.imageUrl!);
+      if (uploadedUrl != null) {
+        finalItem = item.copyWith(imageUrl: uploadedUrl);
+      } else {
+        finalItem = item.copyWith(imageUrl: null);
+      }
+    }
+    _mockMenuItems.add(finalItem);
     try {
       final response = await http
           .post(
             Uri.parse("$baseUrl/api/menu"),
             headers: _authHeaders,
-            body: jsonEncode(item.toJson()),
+            body: jsonEncode(finalItem.toJson()),
           )
           .timeout(const Duration(seconds: 10));
       return (response.statusCode >= 200 && response.statusCode < 300) || useMockFallback;
@@ -184,16 +219,25 @@ class ApiService {
   }
 
   static Future<bool> updateMenuItem(MenuItem item) async {
-    final idx = _mockMenuItems.indexWhere((it) => it.menuItemId == item.menuItemId);
+    var finalItem = item;
+    if (item.imageUrl != null && item.imageUrl!.isNotEmpty && !item.imageUrl!.startsWith('http')) {
+      final uploadedUrl = await uploadImage(item.imageUrl!);
+      if (uploadedUrl != null) {
+        finalItem = item.copyWith(imageUrl: uploadedUrl);
+      } else {
+        finalItem = item.copyWith(imageUrl: null);
+      }
+    }
+    final idx = _mockMenuItems.indexWhere((it) => it.menuItemId == finalItem.menuItemId);
     if (idx != -1) {
-      _mockMenuItems[idx] = item;
+      _mockMenuItems[idx] = finalItem;
     }
     try {
       final response = await http
           .put(
-            Uri.parse("$baseUrl/api/menu/${item.menuItemId}"),
+            Uri.parse("$baseUrl/api/menu/${finalItem.menuItemId}"),
             headers: _authHeaders,
-            body: jsonEncode(item.toJson()),
+            body: jsonEncode(finalItem.toJson()),
           )
           .timeout(const Duration(seconds: 10));
       return (response.statusCode >= 200 && response.statusCode < 300) || useMockFallback;
