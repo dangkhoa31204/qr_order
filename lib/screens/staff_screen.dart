@@ -183,106 +183,136 @@ class _StaffScreenState extends State<StaffScreen>
 
   // --- TAB 1: Real-time Order management ---
   Widget _buildOrdersTab(List<OrderModel> active, List<OrderModel> history) {
-    if (active.isEmpty && history.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: const BoxDecoration(
-                color: AromaColors.coffeeSecondary,
-                shape: BoxShape.circle,
-              ),
-              child: const Text("📝", style: TextStyle(fontSize: 48)),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              "Chưa có đơn hàng nào gửi lên!",
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-                color: AromaColors.coffeeTextDark,
-              ),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              "Sơ đồ bàn đang trống trải ấm cúng",
-              style: TextStyle(fontSize: 12, color: AromaColors.coffeeTextSub),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView(
-      padding: const EdgeInsets.all(16),
+    return Column(
       children: [
-        if (active.isNotEmpty) ...[
-          const Row(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(
-                Icons.hourglass_empty,
-                color: AromaColors.pendingOrange,
-                size: 16,
-              ),
-              SizedBox(width: 6),
-              Text(
-                "ĐANG CHẾ BIẾN & CHỜ DUYỆT",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 11,
-                  color: AromaColors.coffeePrimary,
-                  letterSpacing: 0.5,
-                ),
+              Row(
+                children: [
+                  Text(
+                    "DANH SÁCH ĐƠN HÀNG (${active.length + history.length})",
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: AromaColors.coffeeTextSub,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: widget.onRefreshData,
+                    icon: const Icon(Icons.refresh, size: 18, color: AromaColors.coffeePrimary),
+                    tooltip: "Tải lại",
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: active.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 16),
-            itemBuilder: (context, index) {
-              final o = active[index];
-              return _buildOrderCard(o);
-            },
-          ),
-          const SizedBox(height: 32),
-        ],
-        if (history.isNotEmpty) ...[
-          const Row(
-            children: [
-              Icon(
-                Icons.check_circle_outline,
-                color: AromaColors.successGreen,
-                size: 16,
-              ),
-              SizedBox(width: 6),
-              Text(
-                "LỊCH SỬ ĐÃ THANH TOÁN HOÀN TẤT",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 11,
-                  color: AromaColors.coffeeTextSub,
-                  letterSpacing: 0.5,
+        ),
+        Expanded(
+          child: active.isEmpty && history.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: const BoxDecoration(
+                          color: AromaColors.coffeeSecondary,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Text("📝", style: TextStyle(fontSize: 48)),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        "Chưa có đơn hàng nào gửi lên!",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: AromaColors.coffeeTextDark,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        "Sơ đồ bàn đang trống trải ấm cúng",
+                        style: TextStyle(fontSize: 12, color: AromaColors.coffeeTextSub),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    if (active.isNotEmpty) ...[
+                      const Row(
+                        children: [
+                          Icon(
+                            Icons.hourglass_empty,
+                            color: AromaColors.pendingOrange,
+                            size: 16,
+                          ),
+                          SizedBox(width: 6),
+                          Text(
+                            "ĐANG CHẾ BIẾN & CHỜ DUYỆT",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                              color: AromaColors.coffeePrimary,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: active.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 16),
+                        itemBuilder: (context, index) {
+                          final o = active[index];
+                          return _buildOrderCard(o);
+                        },
+                      ),
+                      const SizedBox(height: 32),
+                    ],
+                    if (history.isNotEmpty) ...[
+                      const Row(
+                        children: [
+                          Icon(
+                            Icons.check_circle_outline,
+                            color: AromaColors.successGreen,
+                            size: 16,
+                          ),
+                          SizedBox(width: 6),
+                          Text(
+                            "LỊCH SỬ ĐÃ THANH TOÁN HOÀN TẤT",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                              color: AromaColors.coffeeTextSub,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: history.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final o = history[index];
+                          return _buildOrderCard(o);
+                        },
+                      ),
+                    ],
+                  ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: history.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final o = history[index];
-              return _buildOrderCard(o);
-            },
-          ),
-        ],
+        ),
       ],
     );
   }
