@@ -133,6 +133,39 @@ class _MainGateScreenState extends State<MainGateScreen> {
 
   // Kitchen Status advanced progression
   Future<void> _updateOrderStatus(int orderId, OrderStatus status) async {
+    // Cập nhật local state trước để UI phản hồi nhanh
+    setState(() {
+      final idx = _orderQueue.indexWhere((o) => o.orderId == orderId);
+      if (idx != -1) {
+        _orderQueue[idx] = _orderQueue[idx].copyWith(status: status);
+      }
+      if (status == OrderStatus.paid) {
+        _completedTodayCount++;
+        final order = _orderQueue[idx];
+        final tIdx = _tables.indexWhere((t) => t.tableId == order.tableId);
+        if (tIdx != -1) {
+          _tables[tIdx] = _tables[tIdx].copyWith(status: TableStatus.available);
+        }
+      }
+    });
+
+    // Nếu chuyển sang paid, gọi API cập nhật trạng thái bàn sang trống ở backend
+    if (status == OrderStatus.paid) {
+      final order = _orderQueue.firstWhere(
+        (o) => o.orderId == orderId,
+        orElse: () => OrderModel(orderId: -1, tableId: -1),
+      );
+      if (order.orderId != -1) {
+        final table = _tables.firstWhere(
+          (t) => t.tableId == order.tableId,
+          orElse: () => TableModel(tableId: -1),
+        );
+        if (table.tableId != -1) {
+          await ApiService.updateTable(table.copyWith(status: TableStatus.available));
+        }
+      }
+    }
+
     final success = await ApiService.updateOrderStatus(orderId, status);
     if (success) {
       _loadBackendData();
@@ -243,14 +276,50 @@ class _MainGateScreenState extends State<MainGateScreen> {
       () {
         _loadBackendData();
       },
-      onOrderStatusUpdated: (orderId, newStatus) {
-        // Tăng counter real-time khi staff hoàn thành đơn hàng
+      onOrderStatusUpdated: (orderId, newStatus) async {
         final status = newStatus.toLowerCase();
-        if (status == 'paid' || status == 'completed' || status == '4') {
-          if (mounted) {
-            setState(() => _completedTodayCount++);
+        final orderStatus = OrderStatus.fromString(status);
+
+        // Cập nhật local state ngay lập tức để UI đóng lại nhanh và bàn trống ngay
+        if (mounted) {
+          setState(() {
+            final idx = _orderQueue.indexWhere((o) => o.orderId == orderId);
+            if (idx != -1) {
+              _orderQueue[idx] = _orderQueue[idx].copyWith(status: orderStatus);
+            }
+            if (orderStatus == OrderStatus.paid) {
+              _completedTodayCount++;
+              final order = _orderQueue.firstWhere(
+                (o) => o.orderId == orderId,
+                orElse: () => OrderModel(orderId: -1, tableId: -1),
+              );
+              if (order.orderId != -1) {
+                final tIdx = _tables.indexWhere((t) => t.tableId == order.tableId);
+                if (tIdx != -1) {
+                  _tables[tIdx] = _tables[tIdx].copyWith(status: TableStatus.available);
+                }
+              }
+            }
+          });
+        }
+
+        // Tự động chuyển trạng thái bàn sang trống nếu trạng thái đơn là paid
+        if (orderStatus == OrderStatus.paid) {
+          final order = _orderQueue.firstWhere(
+            (o) => o.orderId == orderId,
+            orElse: () => OrderModel(orderId: -1, tableId: -1),
+          );
+          if (order.orderId != -1) {
+            final table = _tables.firstWhere(
+              (t) => t.tableId == order.tableId,
+              orElse: () => TableModel(tableId: -1),
+            );
+            if (table.tableId != -1) {
+              await ApiService.updateTable(table.copyWith(status: TableStatus.available));
+            }
           }
         }
+
         // Reload để cập nhật danh sách đơn
         _loadBackendData();
       },

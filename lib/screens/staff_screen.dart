@@ -909,6 +909,7 @@ class _StaffScreenState extends State<StaffScreen>
                 // Nút giả lập thanh toán phục vụ kiểm thử
                 TextButton.icon(
                   onPressed: () async {
+                    bool simulateLocally = false;
                     try {
                       final url = "${ApiService.baseUrl}/api/payments/sepay-webhook";
                       final response = await http.post(
@@ -920,14 +921,20 @@ class _StaffScreenState extends State<StaffScreen>
                           "transactionContent": "AROMA${order.orderId}",
                           "referenceNumber": "TEST_${DateTime.now().millisecondsSinceEpoch}"
                         }),
-                      );
+                      ).timeout(const Duration(seconds: 4));
                       if (response.statusCode >= 200 && response.statusCode < 300) {
                         debugPrint("✅ Giả lập webhook thành công!");
                       } else {
                         debugPrint("❌ Giả lập thất bại: ${response.statusCode} - ${response.body}");
+                        simulateLocally = true;
                       }
                     } catch (e) {
-                      debugPrint("❌ Lỗi mạng khi giả lập webhook: $e");
+                      debugPrint("❌ Lỗi mạng khi giả lập webhook: $e. Giả lập local.");
+                      simulateLocally = true;
+                    }
+
+                    if (simulateLocally) {
+                      widget.onUpdateOrderStatus(order.orderId, OrderStatus.paid);
                     }
                   },
                   icon: const Icon(Icons.bug_report, size: 16, color: Colors.orange),
