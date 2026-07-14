@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/item_model.dart';
@@ -174,11 +175,16 @@ class ApiService {
   static Future<bool> createMenuItem(MenuItem item) async {
     var finalItem = item;
     if (item.imageUrl != null && item.imageUrl!.isNotEmpty && !item.imageUrl!.startsWith('http')) {
-      final uploadedUrl = await uploadImage(item.imageUrl!);
-      if (uploadedUrl != null) {
-        finalItem = item.copyWith(imageUrl: uploadedUrl);
+      final file = File(item.imageUrl!);
+      if (await file.exists()) {
+        final uploadedUrl = await uploadImage(item.imageUrl!);
+        if (uploadedUrl != null) {
+          finalItem = item.copyWith(imageUrl: uploadedUrl);
+        } else {
+          finalItem = item.copyWith(clearImageUrl: true);
+        }
       } else {
-        finalItem = item.copyWith(imageUrl: null);
+        finalItem = item.copyWith(clearImageUrl: true);
       }
     }
     _mockMenuItems.add(finalItem);
@@ -199,11 +205,16 @@ class ApiService {
   static Future<bool> updateMenuItem(MenuItem item) async {
     var finalItem = item;
     if (item.imageUrl != null && item.imageUrl!.isNotEmpty && !item.imageUrl!.startsWith('http')) {
-      final uploadedUrl = await uploadImage(item.imageUrl!);
-      if (uploadedUrl != null) {
-        finalItem = item.copyWith(imageUrl: uploadedUrl);
+      final file = File(item.imageUrl!);
+      if (await file.exists()) {
+        final uploadedUrl = await uploadImage(item.imageUrl!);
+        if (uploadedUrl != null) {
+          finalItem = item.copyWith(imageUrl: uploadedUrl);
+        } else {
+          finalItem = item.copyWith(clearImageUrl: true);
+        }
       } else {
-        finalItem = item.copyWith(imageUrl: null);
+        finalItem = item.copyWith(clearImageUrl: true);
       }
     }
     final idx = _mockMenuItems.indexWhere((it) => it.menuItemId == finalItem.menuItemId);
