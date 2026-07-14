@@ -85,7 +85,7 @@ enum OrderStatus {
       case OrderStatus.ready:
         return AromaColors.successGreen;
       case OrderStatus.paid:
-        return AromaColors.coffeeTextSub;
+        return AromaColors.successGreen;
       case OrderStatus.cancelled:
         return Colors.redAccent;
     }

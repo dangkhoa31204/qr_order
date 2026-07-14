@@ -781,7 +781,7 @@ class _AdminScreenState extends State<AdminScreen>
               ),
               alignment: Alignment.center,
               child: imageProvider == null
-                  ? Text(item.categoryIcon, style: const TextStyle(fontSize: 28))
+                  ? const Icon(Icons.fastfood, size: 28, color: AromaColors.coffeeTextSub)
                   : null,
             ),
             const SizedBox(width: 14),
@@ -894,6 +894,17 @@ class _AdminScreenState extends State<AdminScreen>
     required String? imagePath,
     required VoidCallback onTap,
   }) {
+    ImageProvider? imageProvider;
+    if (imagePath != null && imagePath.isNotEmpty) {
+      final isLocalFile = !imagePath.startsWith('http') &&
+          (imagePath.startsWith('/') || imagePath.contains(':\\\\') || imagePath.contains(':/'));
+      if (isLocalFile) {
+        imageProvider = FileImage(File(imagePath));
+      } else {
+        imageProvider = NetworkImage(imagePath);
+      }
+    }
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -907,14 +918,14 @@ class _AdminScreenState extends State<AdminScreen>
             width: 1.5,
           ),
         ),
-        child: imagePath != null && imagePath.isNotEmpty
+        child: imageProvider != null
             ? ClipRRect(
                 borderRadius: BorderRadius.circular(15),
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.file(
-                      File(imagePath),
+                    Image(
+                      image: imageProvider,
                       fit: BoxFit.cover,
                     ),
                     Positioned(

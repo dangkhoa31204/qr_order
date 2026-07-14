@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import '../constants.dart';
 import '../models/item_model.dart';
@@ -378,6 +379,15 @@ class _StaffScreenState extends State<StaffScreen>
                         color: AromaColors.coffeeTextDark,
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    Text(
+                      "|  ${DateFormat('HH:mm  dd/MM/yyyy').format(order.createdAt.toLocal())}",
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AromaColors.coffeeTextSub,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ],
                 ),
                 Container(
@@ -404,6 +414,34 @@ class _StaffScreenState extends State<StaffScreen>
 
             // Item descriptions list
             ...order.items.map((it) {
+              // Find matching menuItem from widget.menuItems to display categoryIcon and name
+              final matchedMenuItem = widget.menuItems.firstWhere(
+                (m) => m.menuItemId == it.menuItemId,
+                orElse: () => MenuItem(
+                  menuItemId: it.menuItemId,
+                  name: it.menuItemName ?? '',
+                  price: it.unitPrice,
+                  category: CategoryType.other,
+                ),
+              );
+
+              final String itemName = (matchedMenuItem.name.isNotEmpty)
+                  ? matchedMenuItem.name
+                  : (it.menuItemName ?? 'Món ăn (ID: ${it.menuItemId})');
+
+              // Setup image provider for order item photo
+              ImageProvider? itemImageProvider;
+              if (matchedMenuItem.imageUrl != null && matchedMenuItem.imageUrl!.isNotEmpty) {
+                final path = matchedMenuItem.imageUrl!;
+                final isLocalFile = !path.startsWith('http') &&
+                    (path.startsWith('/') || path.contains(':\\\\') || path.contains(':/'));
+                if (isLocalFile) {
+                  itemImageProvider = FileImage(File(path));
+                } else {
+                  itemImageProvider = NetworkImage(path);
+                }
+              }
+
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4.0),
                 child: Column(
@@ -412,13 +450,36 @@ class _StaffScreenState extends State<StaffScreen>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          "${it.menuItemRef?.categoryIcon ?? '🍽️'} ${it.menuItemRef?.name ?? 'Món ăn (ID: ${it.menuItemId})'}   x${it.quantity}",
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: AromaColors.coffeeTextDark,
-                          ),
+                        Row(
+                          children: [
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: AromaColors.coffeeCardLightBg,
+                                borderRadius: BorderRadius.circular(6),
+                                image: itemImageProvider != null
+                                    ? DecorationImage(
+                                        image: itemImageProvider,
+                                        fit: BoxFit.cover,
+                                      )
+                                    : null,
+                              ),
+                              alignment: Alignment.center,
+                              child: itemImageProvider == null
+                                  ? const Icon(Icons.fastfood, size: 14, color: AromaColors.coffeeTextSub)
+                                  : null,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              "$itemName   x${it.quantity}",
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: AromaColors.coffeeTextDark,
+                              ),
+                            ),
+                          ],
                         ),
                         Text(
                           formatVND(it.unitPrice * it.quantity),
@@ -444,7 +505,7 @@ class _StaffScreenState extends State<StaffScreen>
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
-                                it.note!,
+                                "Ghi chú riêng: ${it.note!}",
                                 style: const TextStyle(
                                   fontSize: 12,
                                   fontStyle: FontStyle.italic,
@@ -481,7 +542,7 @@ class _StaffScreenState extends State<StaffScreen>
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        "Ghi chú: ${order.note}",
+                        "Ghi chú chung: ${order.note}",
                         style: const TextStyle(
                           fontSize: 11,
                           fontStyle: FontStyle.italic,
@@ -683,7 +744,7 @@ class _StaffScreenState extends State<StaffScreen>
               ),
               alignment: Alignment.center,
               child: imageProvider == null
-                  ? Text(item.categoryIcon, style: const TextStyle(fontSize: 28))
+                  ? const Icon(Icons.fastfood, size: 28, color: AromaColors.coffeeTextSub)
                   : null,
             ),
             const SizedBox(width: 14),
