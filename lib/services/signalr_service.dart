@@ -18,7 +18,11 @@ class SignalRService {
       return; // Đã kết nối
     }
 
-    final serverUrl = "${ApiService.baseUrl}$_hubRoute";
+    // Nếu cấu hình dùng API Gateway, chuyển trực tiếp qua Service URL cho SignalR (vì Gateway không cấu hình route cho Websockets/SignalR)
+    String serverUrl = "${ApiService.baseUrl}$_hubRoute";
+    if (ApiService.baseUrl.contains("prm-gateway.onrender.com")) {
+      serverUrl = "https://qr-order-api.onrender.com$_hubRoute";
+    }
 
     _hubConnection = HubConnectionBuilder()
         .withUrl(serverUrl, options: HttpConnectionOptions(

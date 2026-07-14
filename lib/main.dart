@@ -149,23 +149,6 @@ class _MainGateScreenState extends State<MainGateScreen> {
       }
     });
 
-    // Nếu chuyển sang paid, gọi API cập nhật trạng thái bàn sang trống ở backend
-    if (status == OrderStatus.paid) {
-      final order = _orderQueue.firstWhere(
-        (o) => o.orderId == orderId,
-        orElse: () => OrderModel(orderId: -1, tableId: -1),
-      );
-      if (order.orderId != -1) {
-        final table = _tables.firstWhere(
-          (t) => t.tableId == order.tableId,
-          orElse: () => TableModel(tableId: -1),
-        );
-        if (table.tableId != -1) {
-          await ApiService.updateTable(table.copyWith(status: TableStatus.available));
-        }
-      }
-    }
-
     final success = await ApiService.updateOrderStatus(orderId, status);
     if (success) {
       _loadBackendData();
@@ -301,23 +284,6 @@ class _MainGateScreenState extends State<MainGateScreen> {
               }
             }
           });
-        }
-
-        // Tự động chuyển trạng thái bàn sang trống nếu trạng thái đơn là paid
-        if (orderStatus == OrderStatus.paid) {
-          final order = _orderQueue.firstWhere(
-            (o) => o.orderId == orderId,
-            orElse: () => OrderModel(orderId: -1, tableId: -1),
-          );
-          if (order.orderId != -1) {
-            final table = _tables.firstWhere(
-              (t) => t.tableId == order.tableId,
-              orElse: () => TableModel(tableId: -1),
-            );
-            if (table.tableId != -1) {
-              await ApiService.updateTable(table.copyWith(status: TableStatus.available));
-            }
-          }
         }
 
         // Reload để cập nhật danh sách đơn
