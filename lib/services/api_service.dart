@@ -274,6 +274,15 @@ class ApiService {
     }
   }
 
+  /// Lấy thông tin chi tiết của một đơn hàng trực tiếp từ Server (không dùng mock fallback)
+  static Future<OrderModel?> fetchOrderById(int orderId) async {
+    final result = await _safeGet("/api/orders/$orderId");
+    if (result["success"] == true) {
+      return OrderModel.fromJson(result["data"]);
+    }
+    return null;
+  }
+
   static Future<bool> submitOrder(OrderModel order) async {
     _mockOrderQueue.add(order);
     try {

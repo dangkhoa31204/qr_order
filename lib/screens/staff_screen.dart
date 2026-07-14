@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -43,6 +44,7 @@ class _StaffScreenState extends State<StaffScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   int? _activeQrOrderId;
+  VoidCallback? _closeQrDialog;
 
   @override
   void didUpdateWidget(StaffScreen oldWidget) {
@@ -53,16 +55,8 @@ class _StaffScreenState extends State<StaffScreen>
         orElse: () => OrderModel(orderId: -1, tableId: -1),
       );
       if (order.orderId == -1 || order.status == OrderStatus.paid) {
-        _activeQrOrderId = null;
-        if (Navigator.canPop(context)) {
-          Navigator.pop(context);
-        }
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("✅ Đơn hàng đã được thanh toán thành công qua Sepay!"),
-            backgroundColor: AromaColors.successGreen,
-          ),
-        );
+        // Đóng dialog bằng callback đã lưu (context chính xác)
+        _closeQrDialog?.call();
       }
     }
   }
@@ -828,10 +822,53 @@ class _StaffScreenState extends State<StaffScreen>
         "&addInfo=AROMA${order.orderId}"
         "&accountName=${Uri.encodeComponent(SepayConfig.accountName)}";
 
+    // Dùng dialogContext để pop đúng context của dialog
+    BuildContext? dialogContext;
+
+    void closeDialogAndNotify() {
+      if (dialogContext != null && Navigator.canPop(dialogContext!)) {
+        Navigator.pop(dialogContext!);
+      }
+      if (mounted) {
+        setState(() => _activeQrOrderId = null);
+        _closeQrDialog = null;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("✅ Đơn hàng đã được thanh toán thành công qua Sepay!"),
+            backgroundColor: AromaColors.successGreen,
+          ),
+        );
+      }
+    }
+
+    Timer? pollingTimer;
+    // Bắt đầu tự động kiểm tra trạng thái đơn hàng mỗi 5 giây phòng trường hợp SignalR lỗi/chậm (không dùng mock fallback)
+    pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
+      if (_activeQrOrderId == null) {
+        timer.cancel();
+        return;
+      }
+      try {
+        final currentOrder = await ApiService.fetchOrderById(order.orderId);
+        if (currentOrder != null && currentOrder.status == OrderStatus.paid) {
+          timer.cancel();
+          // Đóng dialog trực tiếp từ polling timer với context chính xác
+          widget.onUpdateOrderStatus(order.orderId, OrderStatus.paid);
+          closeDialogAndNotify();
+        }
+      } catch (e) {
+        debugPrint("Error polling order status: $e");
+      }
+    });
+
+    // Lưu callback đóng dialog để didUpdateWidget cũng có thể gọi (SignalR path)
+    _closeQrDialog = closeDialogAndNotify;
+
     showDialog(
       context: context,
       barrierDismissible: true,
-      builder: (BuildContext context) {
+      builder: (BuildContext ctx) {
+        dialogContext = ctx;
         return Dialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
@@ -854,7 +891,7 @@ class _StaffScreenState extends State<StaffScreen>
                     ),
                     IconButton(
                       icon: const Icon(Icons.close, color: Colors.grey),
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () => Navigator.pop(ctx),
                     ),
                   ],
                 ),
@@ -970,33 +1007,28 @@ class _StaffScreenState extends State<StaffScreen>
                 // Nút giả lập thanh toán phục vụ kiểm thử
                 TextButton.icon(
                   onPressed: () async {
-                    bool simulateLocally = false;
-                    try {
-                      final url = "${ApiService.baseUrl}/api/payments/sepay-webhook";
-                      final response = await http.post(
-                        Uri.parse(url),
-                        headers: {"Content-Type": "application/json"},
-                        body: jsonEncode({
-                          "transferAmount": order.totalAmount,
-                          "transferType": "in",
-                          "transactionContent": "AROMA${order.orderId}",
-                          "referenceNumber": "TEST_${DateTime.now().millisecondsSinceEpoch}"
-                        }),
-                      ).timeout(const Duration(seconds: 4));
-                      if (response.statusCode >= 200 && response.statusCode < 300) {
-                        debugPrint("✅ Giả lập webhook thành công!");
-                      } else {
-                        debugPrint("❌ Giả lập thất bại: ${response.statusCode} - ${response.body}");
-                        simulateLocally = true;
-                      }
-                    } catch (e) {
-                      debugPrint("❌ Lỗi mạng khi giả lập webhook: $e. Giả lập local.");
-                      simulateLocally = true;
-                    }
+                    // Cập nhật local ngay lập tức để UI đóng và bàn trống tức thì
+                    widget.onUpdateOrderStatus(order.orderId, OrderStatus.paid);
+                    closeDialogAndNotify();
 
-                    if (simulateLocally) {
-                      widget.onUpdateOrderStatus(order.orderId, OrderStatus.paid);
-                    }
+                    // Đồng thời gửi webhook lên backend ở chế độ background để cập nhật cơ sở dữ liệu trên server
+                    unawaited(Future(() async {
+                      try {
+                        final url = "${ApiService.baseUrl}/api/payments/sepay-webhook";
+                        await http.post(
+                          Uri.parse(url),
+                          headers: {"Content-Type": "application/json"},
+                          body: jsonEncode({
+                            "transferAmount": order.totalAmount,
+                            "transferType": "in",
+                            "transactionContent": "AROMA${order.orderId}",
+                            "referenceNumber": "TEST_${DateTime.now().millisecondsSinceEpoch}"
+                          }),
+                        ).timeout(const Duration(seconds: 4));
+                      } catch (e) {
+                        debugPrint("Background webhook simulation error: $e");
+                      }
+                    }));
                   },
                   icon: const Icon(Icons.bug_report, size: 16, color: Colors.orange),
                   label: const Text(
@@ -1012,6 +1044,9 @@ class _StaffScreenState extends State<StaffScreen>
       },
     ).then((_) {
       _activeQrOrderId = null;
+      _closeQrDialog = null;
+      dialogContext = null;
+      pollingTimer?.cancel();
     });
   }
 
