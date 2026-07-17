@@ -811,6 +811,27 @@ class _StaffScreenState extends State<StaffScreen>
     );
   }
 
+  void _showPaymentSuccessScreen(OrderModel order) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'payment_success',
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 400),
+      pageBuilder: (ctx, anim1, anim2) => const SizedBox(),
+      transitionBuilder: (ctx, anim1, anim2, _) {
+        final curved = CurvedAnimation(parent: anim1, curve: Curves.elasticOut);
+        return ScaleTransition(
+          scale: curved,
+          child: FadeTransition(
+            opacity: anim1,
+            child: _PaymentSuccessDialog(order: order),
+          ),
+        );
+      },
+    );
+  }
+
   void _showSepayQrDialog(OrderModel order) {
     setState(() {
       _activeQrOrderId = order.orderId;
@@ -825,31 +846,35 @@ class _StaffScreenState extends State<StaffScreen>
     // Dùng dialogContext để pop đúng context của dialog
     BuildContext? dialogContext;
 
+    // Flag chống double-trigger: cả SignalR lẫn polling đều gọi closeDialogAndNotify
+    // biến này đảm bảo success screen chỉ hiển thị đúng 1 lần
+    bool _successShown = false;
+
     void closeDialogAndNotify() {
+      if (_successShown) return; // Ngăn double-trigger
+      _successShown = true;
+
       if (dialogContext != null && Navigator.canPop(dialogContext!)) {
         Navigator.pop(dialogContext!);
       }
       if (mounted) {
         setState(() => _activeQrOrderId = null);
         _closeQrDialog = null;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("✅ Đơn hàng đã được thanh toán thành công qua Sepay!"),
-            backgroundColor: AromaColors.successGreen,
-          ),
-        );
+        // Hiện màn hình thanh toán thành công
+        _showPaymentSuccessScreen(order);
       }
     }
 
     Timer? pollingTimer;
-    // Bắt đầu tự động kiểm tra trạng thái đơn hàng mỗi 5 giây phòng trường hợp SignalR lỗi/chậm (không dùng mock fallback)
-    pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
+    // Bắt đầu tự động kiểm tra trạng thái đơn hàng mỗi 3 giây phòng trường hợp SignalR lỗi/chậm
+    pollingTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
       if (_activeQrOrderId == null) {
         timer.cancel();
         return;
       }
       try {
         final currentOrder = await ApiService.fetchOrderById(order.orderId);
+        debugPrint('📡 Polling order ${order.orderId}: status=${currentOrder?.status} (${currentOrder?.status.value})');
         if (currentOrder != null && currentOrder.status == OrderStatus.paid) {
           timer.cancel();
           // Đóng dialog trực tiếp từ polling timer với context chính xác
@@ -857,7 +882,7 @@ class _StaffScreenState extends State<StaffScreen>
           closeDialogAndNotify();
         }
       } catch (e) {
-        debugPrint("Error polling order status: $e");
+        debugPrint("❌ Error polling order status: $e");
       }
     });
 
@@ -1076,6 +1101,228 @@ class _StaffScreenState extends State<StaffScreen>
                 ),
               ),
       ],
+    );
+  }
+}
+
+/// Dialog thanh toán thành công — hiển thị sau khi SeePay xác nhận
+class _PaymentSuccessDialog extends StatefulWidget {
+  final OrderModel order;
+  const _PaymentSuccessDialog({required this.order});
+
+  @override
+  State<_PaymentSuccessDialog> createState() => _PaymentSuccessDialogState();
+}
+
+class _PaymentSuccessDialogState extends State<_PaymentSuccessDialog>
+    with TickerProviderStateMixin {
+  late AnimationController _checkController;
+  late AnimationController _pulseController;
+  late Animation<double> _checkAnim;
+  late Animation<double> _pulseAnim;
+  Timer? _autoCloseTimer;
+  int _countdown = 3;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _checkController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+
+    _checkAnim = CurvedAnimation(parent: _checkController, curve: Curves.easeOutBack);
+    _pulseAnim = Tween<double>(begin: 1.0, end: 1.08).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    _checkController.forward();
+
+    // Đếm ngược và tự đóng
+    _autoCloseTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) { timer.cancel(); return; }
+      setState(() => _countdown--);
+      if (_countdown <= 0) {
+        timer.cancel();
+        if (mounted && Navigator.canPop(context)) Navigator.pop(context);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _checkController.dispose();
+    _pulseController.dispose();
+    _autoCloseTimer?.cancel();
+    super.dispose();
+  }
+
+  String get _formattedAmount {
+    final amount = widget.order.totalAmount;
+    final formatted = amount.toInt().toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]}.',
+    );
+    return '$formatted đ';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 80),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF1B5E20), Color(0xFF2E7D32), Color(0xFF388E3C)],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.green.shade900.withValues(alpha: 0.5),
+              blurRadius: 40,
+              offset: const Offset(0, 16),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Checkmark animation
+              ScaleTransition(
+                scale: _pulseAnim,
+                child: ScaleTransition(
+                  scale: _checkAnim,
+                  child: Container(
+                    width: 88,
+                    height: 88,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 2),
+                    ),
+                    child: const Icon(
+                      Icons.check_rounded,
+                      color: Colors.white,
+                      size: 52,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Title
+              const Text(
+                'Thanh toán thành công!',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: 0.3,
+                ),
+                textAlign: TextAlign.center,
+              ),
+
+              const SizedBox(height: 8),
+
+              Text(
+                'Đơn hàng #${widget.order.orderId} · ${widget.order.tableLabel}',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.white.withValues(alpha: 0.75),
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+
+              const SizedBox(height: 24),
+
+              // Amount box
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      'SỐ TIỀN ĐÃ THU',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white.withValues(alpha: 0.65),
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      _formattedAmount,
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // SeePay badge
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.verified, size: 14, color: Colors.white.withValues(alpha: 0.7)),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Xác nhận qua SeePay · TPBank',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.7),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              // Close button + countdown
+              GestureDetector(
+                onTap: () { if (Navigator.canPop(context)) Navigator.pop(context); },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  child: Text(
+                    'Đóng ($_countdown)',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2E7D32),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
