@@ -88,32 +88,26 @@ class _StaffScreenState extends State<StaffScreen>
           children: [
             Text(
               widget.currentUser?.role == AccountRole.admin ? "Admin Dashboard" : "Staff Dashboard",
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-                color: Colors.white,
-              ),
+              style: AromaTypography.h3.copyWith(color: AromaColors.coffeeSurface),
             ),
             if (widget.currentUser != null) ...[
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: widget.currentUser!.role == AccountRole.admin
-                      ? AromaColors.coffeeGold.withValues(alpha: 0.9)
-                      : Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(8),
+                      ? AromaColors.coffeeGold
+                      : AromaColors.coffeeSurface.withOpacity(0.2),
+                  borderRadius: AromaStyles.radiusSmall,
                 ),
                 child: Text(
                   widget.currentUser!.role.label.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
+                  style: AromaTypography.bodySmall.copyWith(
+                    fontWeight: FontWeight.w700,
                     color: widget.currentUser!.role == AccountRole.admin
                         ? AromaColors.coffeeTextDark
-                        : Colors.white,
-                    letterSpacing: 0.5,
+                        : AromaColors.coffeeSurface,
+                    fontSize: 10,
                   ),
                 ),
               ),
@@ -126,34 +120,31 @@ class _StaffScreenState extends State<StaffScreen>
         actions: [
           if (widget.currentUser != null)
             Padding(
-              padding: const EdgeInsets.only(right: 4),
+              padding: const EdgeInsets.only(right: 8),
               child: Center(
                 child: Text(
                   widget.currentUser!.username,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: AromaTypography.bodyMedium.copyWith(color: AromaColors.coffeeSurface.withOpacity(0.8)),
                 ),
               ),
             ),
           IconButton(
             onPressed: widget.onBackToGateway,
-            icon: const Icon(Icons.logout, color: Colors.white, size: 20),
+            icon: const Icon(Icons.logout, color: AromaColors.coffeeSurface, size: 22),
             tooltip: "Đăng xuất",
           ),
         ],
         bottom: TabBar(
           controller: _tabController,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
+          labelColor: AromaColors.coffeeGold,
+          unselectedLabelColor: AromaColors.coffeeSurface.withOpacity(0.6),
           indicatorColor: AromaColors.coffeeGold,
-          indicatorWeight: 3,
+          indicatorWeight: 4,
+          labelStyle: AromaTypography.buttonText.copyWith(fontSize: 13),
           tabs: const [
-            Tab(icon: Icon(Icons.receipt_long), text: "ĐƠN ORDER ĐỂ NẤU"),
-            Tab(icon: Icon(Icons.restaurant_menu), text: "QUẢN LÝ MENU"),
-            Tab(icon: Icon(Icons.table_restaurant), text: "QUẢN LÝ BÀN"),
+            Tab(icon: Icon(Icons.receipt_long_rounded), text: "ĐƠN ORDER"),
+            Tab(icon: Icon(Icons.restaurant_menu_rounded), text: "MENU"),
+            Tab(icon: Icon(Icons.table_restaurant_rounded), text: "BÀN"),
           ],
         ),
       ),

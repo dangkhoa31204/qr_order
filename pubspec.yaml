@@ -17,6 +17,8 @@ dependencies:
   intl: ^0.19.0
   image_picker: ^1.0.7
   signalr_netcore: ^1.4.4
+  google_fonts: ^8.2.0
+  phosphor_flutter: ^2.1.0
 
 dev_dependencies:
   flutter_test:
