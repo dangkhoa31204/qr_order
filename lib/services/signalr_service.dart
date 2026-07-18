@@ -50,7 +50,6 @@ class SignalRService {
       accessTokenFactory: () async {
         return ApiService.accessToken ?? "";
       },
-      transport: HttpTransportType.ServerSentEvents,
     ))
         .withAutomaticReconnect()
         .build();
