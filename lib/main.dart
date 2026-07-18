@@ -29,9 +29,68 @@ class AromaBistroApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(
           seedColor: AromaColors.coffeePrimary,
           primary: AromaColors.coffeePrimary,
-          surface: AromaColors.coffeeBackground,
+          secondary: AromaColors.coffeeAccent,
+          surface: AromaColors.coffeeSurface,
+          background: AromaColors.coffeeBackground,
+          error: AromaColors.errorRed,
         ),
-        fontFamily: 'Serif',
+        textTheme: TextTheme(
+          displayLarge: AromaTypography.h1,
+          displayMedium: AromaTypography.h2,
+          displaySmall: AromaTypography.h3,
+          bodyLarge: AromaTypography.bodyLarge,
+          bodyMedium: AromaTypography.bodyMedium,
+          bodySmall: AromaTypography.bodySmall,
+          labelLarge: AromaTypography.buttonText,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AromaColors.coffeePrimary,
+            foregroundColor: Colors.white,
+            textStyle: AromaTypography.buttonText,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: AromaStyles.radiusMedium,
+            ),
+            elevation: 0,
+          ),
+        ),
+        cardTheme: CardThemeData(
+          color: AromaColors.coffeeSurface,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: AromaStyles.radiusMedium,
+            side: const BorderSide(color: AromaColors.coffeeCardBorder, width: 1),
+          ),
+          margin: EdgeInsets.zero,
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: AromaColors.coffeeCardLightBg,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+          border: OutlineInputBorder(
+            borderRadius: AromaStyles.radiusSmall,
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: AromaStyles.radiusSmall,
+            borderSide: const BorderSide(color: AromaColors.coffeeCardBorder, width: 1),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: AromaStyles.radiusSmall,
+            borderSide: const BorderSide(color: AromaColors.coffeePrimary, width: 2),
+          ),
+          labelStyle: AromaTypography.bodyMedium,
+          hintStyle: AromaTypography.bodyMedium.copyWith(color: AromaColors.coffeeTextSub),
+        ),
+        appBarTheme: AppBarTheme(
+          backgroundColor: AromaColors.coffeeSurface,
+          foregroundColor: AromaColors.coffeeTextDark,
+          elevation: 0,
+          centerTitle: true,
+          titleTextStyle: AromaTypography.h2,
+          iconTheme: const IconThemeData(color: AromaColors.coffeeTextDark),
+        ),
       ),
       home: const MainGateScreen(),
     );
@@ -150,6 +209,25 @@ class _MainGateScreenState extends State<MainGateScreen> {
     });
 
     final success = await ApiService.updateOrderStatus(orderId, status);
+    if (success) {
+      _loadBackendData();
+    }
+  }
+
+  Future<void> _updateOrderItemStatus(int orderId, int itemId, OrderItemStatus status) async {
+    setState(() {
+      final oIdx = _orderQueue.indexWhere((o) => o.orderId == orderId);
+      if (oIdx != -1) {
+        final order = _orderQueue[oIdx];
+        final iIdx = order.items.indexWhere((i) => i.orderItemId == itemId);
+        if (iIdx != -1) {
+          final newItems = List<OrderItemModel>.from(order.items);
+          newItems[iIdx] = newItems[iIdx].copyWith(status: status);
+          _orderQueue[oIdx] = order.copyWith(items: newItems);
+        }
+      }
+    });
+    final success = await ApiService.updateOrderItemStatus(orderId, itemId, status);
     if (success) {
       _loadBackendData();
     }
@@ -318,6 +396,7 @@ class _MainGateScreenState extends State<MainGateScreen> {
         feedbacks: _feedbacks,
         completedTodayCount: _completedTodayCount,
         onUpdateOrderStatus: _updateOrderStatus,
+        onUpdateOrderItemStatus: _updateOrderItemStatus,
         onToggleAvailability: _toggleAvailability,
         onCreateMenuItem: _createMenuItem,
         onUpdateMenuItem: _updateMenuItem,
@@ -350,6 +429,7 @@ class _MainGateScreenState extends State<MainGateScreen> {
       menuItems: _menuItems,
       tables: _tables,
       onUpdateOrderStatus: _updateOrderStatus,
+      onUpdateOrderItemStatus: _updateOrderItemStatus,
       onToggleAvailability: _toggleAvailability,
       onUpdateTable: _updateTable,
       onExportQrCode: _exportQrCode,

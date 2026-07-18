@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../constants.dart';
 import '../models/account_model.dart';
 import '../services/api_service.dart';
@@ -25,18 +26,26 @@ class _LoginScreenState extends State<LoginScreen>
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
     super.initState();
     _fadeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 1000),
     );
     _fadeAnimation = CurvedAnimation(
       parent: _fadeController,
-      curve: Curves.easeInOut,
+      curve: Curves.easeOutCubic,
     );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.1),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeOutCubic,
+    ));
     _fadeController.forward();
   }
 
@@ -65,7 +74,6 @@ class _LoginScreenState extends State<LoginScreen>
       return;
     }
 
-    // Gọi API login thật với JWT response
     final result = await ApiService.login(username, password);
 
     if (!mounted) return;
@@ -83,257 +91,189 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return Scaffold(
       backgroundColor: AromaColors.coffeeBackground,
-      body: SafeArea(
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 28.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 60),
-
-                  // ── Logo with animated glow ──
-                  Container(
-                    width: 110,
-                    height: 110,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [
-                          Color(0xFF8B6F47),
-                          AromaColors.coffeePrimary,
-                          Color(0xFF5A3D2B),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(32),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AromaColors.coffeePrimary.withValues(alpha: 0.35),
-                          blurRadius: 28,
-                          offset: const Offset(0, 12),
-                        ),
-                        BoxShadow(
-                          color: AromaColors.coffeeGold.withValues(alpha: 0.15),
-                          blurRadius: 40,
-                          spreadRadius: 4,
-                          offset: const Offset(0, 0),
-                        ),
-                      ],
-                    ),
-                    alignment: Alignment.center,
-                    child: const Text(
-                      "☕",
-                      style: TextStyle(fontSize: 56),
-                    ),
-                  ),
-                  const SizedBox(height: 36),
-
-                  // ── Title ──
-                  const Text(
-                    "QR ORDERING",
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w900,
-                      color: AromaColors.coffeePrimary,
-                      fontFamily: 'Serif',
-                      letterSpacing: 2.0,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AromaColors.coffeePrimary.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Text(
-                      "Dành cho Staff & Admin",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AromaColors.coffeePrimary,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 48),
-
-                  // ── Error Message ──
-                  AnimatedSize(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                    child: _errorMessage.isNotEmpty
-                        ? Container(
-                            margin: const EdgeInsets.only(bottom: 20),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 14),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFF0F0),
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                  color: Colors.red.shade200, width: 1.2),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.red.withValues(alpha: 0.06),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: Colors.red.shade50,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(Icons.error_outline,
-                                      color: Colors.red.shade600, size: 20),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    _errorMessage,
-                                    style: TextStyle(
-                                      color: Colors.red.shade700,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                      height: 1.4,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : const SizedBox.shrink(),
-                  ),
-
-                  // ── Username Field ──
-                  _buildInputField(
-                    controller: _usernameController,
-                    label: "Tên đăng nhập hoặc Email",
-                    icon: Icons.person_outline_rounded,
-                    enabled: !_isLoading,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // ── Password Field ──
-                  _buildInputField(
-                    controller: _passwordController,
-                    label: "Mật khẩu",
-                    icon: Icons.lock_outline_rounded,
-                    enabled: !_isLoading,
-                    isPassword: true,
-                  ),
-
-                  const SizedBox(height: 36),
-
-                  // ── Login Button ──
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _handleLogin,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AromaColors.coffeePrimary,
-                        disabledBackgroundColor:
-                            AromaColors.coffeePrimary.withValues(alpha: 0.5),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        elevation: 6,
-                        shadowColor:
-                            AromaColors.coffeePrimary.withValues(alpha: 0.35),
-                      ),
-                      child: _isLoading
-                          ? const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2.5,
-                                  ),
-                                ),
-                                SizedBox(width: 12),
-                                Text(
-                                  "ĐANG XỬ LÝ...",
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ],
-                            )
-                          : const Text(
-                              "ĐĂNG NHẬP",
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // ── Server status indicator ──
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: AromaColors.successGreen,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AromaColors.successGreen.withValues(alpha: 0.4),
-                              blurRadius: 6,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        "Kết nối: ${_getDisplayUrl()}",
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: AromaColors.coffeeTextSub.withValues(alpha: 0.7),
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 60),
-                ],
+      body: Stack(
+        children: [
+          // Background Gradient Decoration
+          Positioned(
+            top: -size.width * 0.4,
+            right: -size.width * 0.2,
+            child: Container(
+              width: size.width,
+              height: size.width,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AromaColors.coffeePrimary.withOpacity(0.08),
+                    Colors.transparent,
+                  ],
+                ),
               ),
             ),
           ),
-        ),
+          SafeArea(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: SlideTransition(
+                position: _slideAnimation,
+                child: Center(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // ── Logo ──
+                        Center(
+                          child: Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              color: AromaColors.coffeeSurface,
+                              borderRadius: AromaStyles.radiusLarge,
+                              boxShadow: AromaStyles.glowShadow,
+                            ),
+                            child: const Icon(
+                              PhosphorIconsFill.coffee,
+                              size: 48,
+                              color: AromaColors.coffeePrimary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 40),
+
+                        // ── Title ──
+                        Text(
+                          "AROMA BISTRO",
+                          textAlign: TextAlign.center,
+                          style: AromaTypography.h1,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "Welcome back. Please sign in to continue.",
+                          textAlign: TextAlign.center,
+                          style: AromaTypography.bodyMedium.copyWith(
+                            color: AromaColors.coffeeTextSub,
+                          ),
+                        ),
+                        const SizedBox(height: 48),
+
+                        // ── Error Message ──
+                        AnimatedSize(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOutBack,
+                          child: _errorMessage.isNotEmpty
+                              ? Container(
+                                  margin: const EdgeInsets.only(bottom: 24),
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: AromaColors.errorRed.withOpacity(0.1),
+                                    borderRadius: AromaStyles.radiusMedium,
+                                    border: Border.all(
+                                      color: AromaColors.errorRed.withOpacity(0.3),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        PhosphorIconsRegular.warningCircle,
+                                        color: AromaColors.errorRed,
+                                        size: 24,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          _errorMessage,
+                                          style: AromaTypography.bodyMedium.copyWith(
+                                            color: AromaColors.errorRed,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : const SizedBox.shrink(),
+                        ),
+
+                        // ── Username Field ──
+                        _buildInputField(
+                          controller: _usernameController,
+                          label: "Username or Email",
+                          icon: PhosphorIconsRegular.user,
+                          enabled: !_isLoading,
+                        ),
+                        const SizedBox(height: 20),
+
+                        // ── Password Field ──
+                        _buildInputField(
+                          controller: _passwordController,
+                          label: "Password",
+                          icon: PhosphorIconsRegular.lock,
+                          enabled: !_isLoading,
+                          isPassword: true,
+                        ),
+
+                        const SizedBox(height: 40),
+
+                        // ── Login Button ──
+                        SizedBox(
+                          height: 56,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _handleLogin,
+                            style: Theme.of(context).elevatedButtonTheme.style,
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2.5,
+                                    ),
+                                  )
+                                : const Text("SIGN IN"),
+                          ),
+                        ),
+
+                        const SizedBox(height: 40),
+
+                        // ── Server status indicator ──
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: AromaColors.successGreen,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              "Connected to ${_getDisplayUrl()}",
+                              style: AromaTypography.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   String _getDisplayUrl() {
     final url = ApiService.baseUrl;
-    // Rút gọn URL cho đẹp
     return url
         .replaceAll('https://', '')
         .replaceAll('http://', '')
@@ -349,14 +289,8 @@ class _LoginScreenState extends State<LoginScreen>
   }) {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AromaColors.coffeePrimary.withValues(alpha: 0.05),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: AromaStyles.radiusMedium,
+        boxShadow: AromaStyles.softShadow,
       ),
       child: TextField(
         controller: controller,
@@ -365,26 +299,22 @@ class _LoginScreenState extends State<LoginScreen>
         onSubmitted: (_) {
           if (!_isLoading) _handleLogin();
         },
+        style: AromaTypography.bodyLarge,
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: const TextStyle(
-            color: AromaColors.coffeeTextSub,
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
           prefixIcon: Icon(
             icon,
-            color: AromaColors.coffeePrimary,
             size: 22,
+            color: AromaColors.coffeePrimary,
           ),
           suffixIcon: isPassword
               ? IconButton(
                   icon: Icon(
                     _obscurePassword
-                        ? Icons.visibility_off_rounded
-                        : Icons.visibility_rounded,
+                        ? PhosphorIconsRegular.eyeClosed
+                        : PhosphorIconsRegular.eye,
                     color: AromaColors.coffeeTextSub,
-                    size: 20,
+                    size: 22,
                   ),
                   onPressed: () {
                     setState(() {
@@ -393,35 +323,6 @@ class _LoginScreenState extends State<LoginScreen>
                   },
                 )
               : null,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(
-              color: AromaColors.coffeeCardBorder,
-            ),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(
-              color: AromaColors.coffeeCardBorder,
-            ),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(
-              color: AromaColors.coffeePrimary,
-              width: 2,
-            ),
-          ),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 18,
-          ),
-        ),
-        style: const TextStyle(
-          color: AromaColors.coffeeTextDark,
-          fontSize: 15,
         ),
       ),
     );

@@ -374,6 +374,45 @@ class ApiService {
     }
   }
 
+  static Future<bool> updateOrderItemStatus(
+    int orderId,
+    int orderItemId,
+    OrderItemStatus status,
+  ) async {
+    // Update local state for mock
+    final oIdx = _mockOrderQueue.indexWhere((o) => o.orderId == orderId);
+    if (oIdx != -1) {
+      final order = _mockOrderQueue[oIdx];
+      final iIdx = order.items.indexWhere((i) => i.orderItemId == orderItemId);
+      if (iIdx != -1) {
+        final newItems = List<OrderItemModel>.from(order.items);
+        newItems[iIdx] = newItems[iIdx].copyWith(status: status);
+        _mockOrderQueue[oIdx] = order.copyWith(items: newItems);
+      }
+    }
+
+    if (_accessToken == null && useMockFallback) return true;
+
+    try {
+      final response = await http
+          .patch(
+            Uri.parse("$baseUrl/api/orders/$orderId/items/$orderItemId/status"),
+            headers: _authHeaders,
+            body: jsonEncode({"status": status.value}),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return true;
+      }
+      debugPrint('❌ Lỗi Cập Nhật Món $orderItemId: Server trả về ${response.statusCode} - ${response.body}');
+      return useMockFallback;
+    } catch (e) {
+      debugPrint('❌ Lỗi Mạng Cập Nhật Món: $e');
+      return useMockFallback;
+    }
+  }
+
   // ============================================================
   // 3. TABLE API CALLS
   // ============================================================

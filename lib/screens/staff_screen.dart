@@ -15,6 +15,7 @@ class StaffScreen extends StatefulWidget {
   final List<MenuItem> menuItems;
   final List<TableModel> tables;
   final Function(int, OrderStatus) onUpdateOrderStatus;
+  final Function(int, int, OrderItemStatus) onUpdateOrderItemStatus;
   final Function(int) onToggleAvailability;
   final Function(TableModel) onUpdateTable;
   final Function(TableModel) onExportQrCode;
@@ -28,6 +29,7 @@ class StaffScreen extends StatefulWidget {
     required this.menuItems,
     required this.tables,
     required this.onUpdateOrderStatus,
+    required this.onUpdateOrderItemStatus,
     required this.onToggleAvailability,
     required this.onUpdateTable,
     required this.onExportQrCode,
@@ -88,32 +90,26 @@ class _StaffScreenState extends State<StaffScreen>
           children: [
             Text(
               widget.currentUser?.role == AccountRole.admin ? "Admin Dashboard" : "Staff Dashboard",
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-                color: Colors.white,
-              ),
+              style: AromaTypography.h3.copyWith(color: AromaColors.coffeeSurface),
             ),
             if (widget.currentUser != null) ...[
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: widget.currentUser!.role == AccountRole.admin
-                      ? AromaColors.coffeeGold.withValues(alpha: 0.9)
-                      : Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(8),
+                      ? AromaColors.coffeeGold
+                      : AromaColors.coffeeSurface.withOpacity(0.2),
+                  borderRadius: AromaStyles.radiusSmall,
                 ),
                 child: Text(
                   widget.currentUser!.role.label.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
+                  style: AromaTypography.bodySmall.copyWith(
+                    fontWeight: FontWeight.w700,
                     color: widget.currentUser!.role == AccountRole.admin
                         ? AromaColors.coffeeTextDark
-                        : Colors.white,
-                    letterSpacing: 0.5,
+                        : AromaColors.coffeeSurface,
+                    fontSize: 10,
                   ),
                 ),
               ),
@@ -126,34 +122,31 @@ class _StaffScreenState extends State<StaffScreen>
         actions: [
           if (widget.currentUser != null)
             Padding(
-              padding: const EdgeInsets.only(right: 4),
+              padding: const EdgeInsets.only(right: 8),
               child: Center(
                 child: Text(
                   widget.currentUser!.username,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: AromaTypography.bodyMedium.copyWith(color: AromaColors.coffeeSurface.withOpacity(0.8)),
                 ),
               ),
             ),
           IconButton(
             onPressed: widget.onBackToGateway,
-            icon: const Icon(Icons.logout, color: Colors.white, size: 20),
+            icon: const Icon(Icons.logout, color: AromaColors.coffeeSurface, size: 22),
             tooltip: "Đăng xuất",
           ),
         ],
         bottom: TabBar(
           controller: _tabController,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
+          labelColor: AromaColors.coffeeGold,
+          unselectedLabelColor: AromaColors.coffeeSurface.withOpacity(0.6),
           indicatorColor: AromaColors.coffeeGold,
-          indicatorWeight: 3,
+          indicatorWeight: 4,
+          labelStyle: AromaTypography.buttonText.copyWith(fontSize: 13),
           tabs: const [
-            Tab(icon: Icon(Icons.receipt_long), text: "ĐƠN ORDER ĐỂ NẤU"),
-            Tab(icon: Icon(Icons.restaurant_menu), text: "QUẢN LÝ MENU"),
-            Tab(icon: Icon(Icons.table_restaurant), text: "QUẢN LÝ BÀN"),
+            Tab(icon: Icon(Icons.receipt_long_rounded), text: "ĐƠN ORDER"),
+            Tab(icon: Icon(Icons.restaurant_menu_rounded), text: "MENU"),
+            Tab(icon: Icon(Icons.table_restaurant_rounded), text: "BÀN"),
           ],
         ),
       ),
@@ -402,6 +395,30 @@ class _StaffScreenState extends State<StaffScreen>
                     ),
                   ),
                 ),
+                if (order.items.any((i) => i.status == OrderItemStatus.pending)) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AromaColors.errorRed,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.new_releases, color: Colors.white, size: 12),
+                        SizedBox(width: 4),
+                        Text(
+                          "CÓ MÓN MỚI",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
             const Divider(height: 24),
@@ -443,45 +460,121 @@ class _StaffScreenState extends State<StaffScreen>
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 28,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                color: AromaColors.coffeeCardLightBg,
-                                borderRadius: BorderRadius.circular(6),
-                                image: itemImageProvider != null
-                                    ? DecorationImage(
-                                        image: itemImageProvider,
-                                        fit: BoxFit.cover,
-                                      )
+                        Expanded(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: AromaColors.coffeeCardLightBg,
+                                  borderRadius: BorderRadius.circular(6),
+                                  image: itemImageProvider != null
+                                      ? DecorationImage(
+                                          image: itemImageProvider,
+                                          fit: BoxFit.cover,
+                                        )
+                                      : null,
+                                ),
+                                alignment: Alignment.center,
+                                child: itemImageProvider == null
+                                    ? const Icon(Icons.fastfood, size: 16, color: AromaColors.coffeeTextSub)
                                     : null,
                               ),
-                              alignment: Alignment.center,
-                              child: itemImageProvider == null
-                                  ? const Icon(Icons.fastfood, size: 14, color: AromaColors.coffeeTextSub)
-                                  : null,
-                            ),
-                            const SizedBox(width: 8),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "$itemName   x${it.quantity}",
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: AromaColors.coffeeTextDark,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        if (order.status != OrderStatus.paid && order.status != OrderStatus.cancelled)
+                                          Container(
+                                            height: 24,
+                                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                                            decoration: BoxDecoration(
+                                              color: it.status.color.withOpacity(0.1),
+                                              borderRadius: BorderRadius.circular(4),
+                                              border: Border.all(color: it.status.color.withOpacity(0.3)),
+                                            ),
+                                            child: DropdownButtonHideUnderline(
+                                              child: DropdownButton<OrderItemStatus>(
+                                                value: it.status,
+                                                icon: Icon(Icons.arrow_drop_down, size: 14, color: it.status.color),
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: it.status.color,
+                                                ),
+                                                isDense: true,
+                                                dropdownColor: Colors.white,
+                                                onChanged: (OrderItemStatus? newValue) {
+                                                  if (newValue != null && newValue != it.status) {
+                                                    widget.onUpdateOrderItemStatus(order.orderId, it.orderItemId ?? 0, newValue);
+                                                  }
+                                                },
+                                                items: OrderItemStatus.values.map((st) {
+                                                  return DropdownMenuItem(
+                                                    value: st,
+                                                    child: Text(st.labelVi),
+                                                  );
+                                                }).toList(),
+                                              ),
+                                            ),
+                                          )
+                                        else
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: it.status.color.withOpacity(0.12),
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: Text(
+                                              it.status.labelVi,
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                                color: it.status.color,
+                                              ),
+                                            ),
+                                          ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          DateFormat('HH:mm').format(it.createdAt.toLocal()),
+                                          style: const TextStyle(fontSize: 10, color: AromaColors.coffeeTextSub),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
                             Text(
-                              "$itemName   x${it.quantity}",
+                              formatVND(it.unitPrice * it.quantity),
                               style: const TextStyle(
                                 fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: AromaColors.coffeeTextDark,
+                                color: AromaColors.coffeePrimary,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
-                        ),
-                        Text(
-                          formatVND(it.unitPrice * it.quantity),
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AromaColors.coffeePrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
                         ),
                       ],
                     ),
