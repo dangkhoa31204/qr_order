@@ -153,7 +153,7 @@ class _StaffScreenState extends State<StaffScreen>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildOrdersTab(activeOrders, historicOrders),
+          _buildOrdersTab(activeOrders),
           _buildMenuTab(),
           TableManagementScreen(
             tables: widget.tables,
@@ -170,7 +170,7 @@ class _StaffScreenState extends State<StaffScreen>
   }
 
   // --- TAB 1: Real-time Order management ---
-  Widget _buildOrdersTab(List<OrderModel> active, List<OrderModel> history) {
+  Widget _buildOrdersTab(List<OrderModel> active) {
     return Column(
       children: [
         Padding(
@@ -181,7 +181,7 @@ class _StaffScreenState extends State<StaffScreen>
               Row(
                 children: [
                   Text(
-                    "DANH SÁCH ĐƠN HÀNG (${active.length + history.length})",
+                    "DANH SÁCH ĐƠN HÀNG (${active.length})",
                     style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
@@ -200,7 +200,7 @@ class _StaffScreenState extends State<StaffScreen>
           ),
         ),
         Expanded(
-          child: active.isEmpty && history.isEmpty
+          child: active.isEmpty
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -215,7 +215,7 @@ class _StaffScreenState extends State<StaffScreen>
                       ),
                       const SizedBox(height: 16),
                       const Text(
-                        "Chưa có đơn hàng nào gửi lên!",
+                        "Không có đơn hàng hoạt động!",
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
@@ -261,39 +261,6 @@ class _StaffScreenState extends State<StaffScreen>
                         separatorBuilder: (_, __) => const SizedBox(height: 16),
                         itemBuilder: (context, index) {
                           final o = active[index];
-                          return _buildOrderCard(o);
-                        },
-                      ),
-                      const SizedBox(height: 32),
-                    ],
-                    if (history.isNotEmpty) ...[
-                      const Row(
-                        children: [
-                          Icon(
-                            Icons.check_circle_outline,
-                            color: AromaColors.successGreen,
-                            size: 16,
-                          ),
-                          SizedBox(width: 6),
-                          Text(
-                            "LỊCH SỬ ĐÃ THANH TOÁN HOÀN TẤT",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 11,
-                              color: AromaColors.coffeeTextSub,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: history.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          final o = history[index];
                           return _buildOrderCard(o);
                         },
                       ),
@@ -699,7 +666,7 @@ class _StaffScreenState extends State<StaffScreen>
                     elevation: 0,
                   ),
                   child: const Text(
-                    "💵 THANH TOÁN QR (SEPAY)",
+                    "💵 THANH TOÁN QR",
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
@@ -987,6 +954,9 @@ class _StaffScreenState extends State<StaffScreen>
     }
 
     Timer? pollingTimer;
+    Timer? countdownTimer;
+    int secondsLeft = 15 * 60; // 15 phút
+
     // Bắt đầu tự động kiểm tra trạng thái đơn hàng mỗi 3 giây phòng trường hợp SignalR lỗi/chậm
     pollingTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
       if (_activeQrOrderId == null) {
@@ -1015,140 +985,177 @@ class _StaffScreenState extends State<StaffScreen>
       barrierDismissible: true,
       builder: (BuildContext ctx) {
         dialogContext = ctx;
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            // Khởi chạy bộ đếm ngược
+            if (countdownTimer == null) {
+              countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+                if (secondsLeft > 0) {
+                  setDialogState(() {
+                    secondsLeft--;
+                  });
+                } else {
+                  timer.cancel();
+                  if (Navigator.canPop(ctx)) {
+                    Navigator.pop(ctx);
+                  }
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Mã thanh toán đã hết hạn sau 15 phút"),
+                      backgroundColor: AromaColors.errorRed,
+                    ),
+                  );
+                }
+              });
+            }
+
+            final minutes = (secondsLeft ~/ 60).toString().padLeft(2, '0');
+            final seconds = (secondsLeft % 60).toString().padLeft(2, '0');
+
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      "Thanh toán QR qua Sepay",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: AromaColors.coffeeTextDark,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close, color: Colors.grey),
-                      onPressed: () => Navigator.pop(ctx),
-                    ),
-                  ],
-                ),
-                const Divider(),
-                const SizedBox(height: 12),
-                
-                // QR code image container
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AromaColors.coffeeCardBorder),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 10,
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      qrUrl,
-                      width: 240,
-                      height: 240,
-                      fit: BoxFit.contain,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return const SizedBox(
-                          width: 240,
-                          height: 240,
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              color: AromaColors.coffeePrimary,
-                            ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Thanh toán chuyển khoản QR",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: AromaColors.coffeeTextDark,
                           ),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        return const SizedBox(
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.grey),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                    const Divider(),
+                    const SizedBox(height: 12),
+                    
+                    // QR code image container
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AromaColors.coffeeCardBorder),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 10,
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          qrUrl,
                           width: 240,
                           height: 240,
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.error_outline, color: Colors.red, size: 40),
-                                SizedBox(height: 8),
-                                Text(
-                                  "Không tải được mã QR",
-                                  style: TextStyle(fontSize: 12, color: Colors.red),
+                          fit: BoxFit.contain,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return const SizedBox(
+                              width: 240,
+                              height: 240,
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  color: AromaColors.coffeePrimary,
                                 ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                
-                const SizedBox(height: 16),
-                
-                // Payment details
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AromaColors.coffeeCardLightBg,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AromaColors.coffeeCardBorder.withValues(alpha: 0.5)),
-                  ),
-                  child: Column(
-                    children: [
-                      _buildQrDetailRow("Số tiền:", formatVND(order.totalAmount), isBoldValue: true),
-                      const SizedBox(height: 6),
-                      _buildQrDetailRow("Nội dung:", "AROMA${order.orderId}", isBoldValue: true, isSelectable: true),
-                      const SizedBox(height: 6),
-                      _buildQrDetailRow("Tài khoản:", SepayConfig.accountNumber),
-                      const SizedBox(height: 6),
-                      _buildQrDetailRow("Ngân hàng:", SepayConfig.bankId),
-                    ],
-                  ),
-                ),
-                
-                const SizedBox(height: 20),
-                
-                // Waiting message
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AromaColors.successGreen,
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return const SizedBox(
+                              width: 240,
+                              height: 240,
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.error_outline, color: Colors.red, size: 40),
+                                    SizedBox(height: 8),
+                                    Text(
+                                      "Không tải được mã QR",
+                                      style: TextStyle(fontSize: 12, color: Colors.red),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    
+                    const SizedBox(height: 8),
                     Text(
-                      "Đang chờ khách thanh toán...",
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.green.shade700,
-                        fontWeight: FontWeight.w500,
+                      "Hiệu lực còn lại: $minutes:$seconds",
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AromaColors.errorRed,
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 16),
+                    
+                    const SizedBox(height: 12),
+                    
+                    // Payment details
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AromaColors.coffeeCardLightBg,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AromaColors.coffeeCardBorder.withValues(alpha: 0.5)),
+                      ),
+                      child: Column(
+                        children: [
+                          _buildQrDetailRow("Số tiền:", formatVND(order.totalAmount), isBoldValue: true),
+                          const SizedBox(height: 6),
+                          _buildQrDetailRow("Nội dung:", "AROMA${order.orderId}", isBoldValue: true, isSelectable: true),
+                          const SizedBox(height: 6),
+                          _buildQrDetailRow("Tài khoản:", SepayConfig.accountNumber),
+                          const SizedBox(height: 6),
+                          _buildQrDetailRow("Ngân hàng:", SepayConfig.bankId),
+                        ],
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 20),
+                    
+                    // Waiting message
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AromaColors.successGreen,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          "Đang chờ khách thanh toán...",
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.green.shade700,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
                 
                 // Nút giả lập thanh toán phục vụ kiểm thử
                 TextButton.icon(
@@ -1188,12 +1195,15 @@ class _StaffScreenState extends State<StaffScreen>
           ),
         );
       },
-    ).then((_) {
-      _activeQrOrderId = null;
-      _closeQrDialog = null;
-      dialogContext = null;
-      pollingTimer?.cancel();
-    });
+    );
+  },
+).then((_) {
+  _activeQrOrderId = null;
+  _closeQrDialog = null;
+  dialogContext = null;
+  pollingTimer?.cancel();
+  countdownTimer?.cancel();
+});
   }
 
   Widget _buildQrDetailRow(String label, String value, {bool isBoldValue = false, bool isSelectable = false}) {

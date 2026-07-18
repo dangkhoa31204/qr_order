@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:signalr_netcore/signalr_client.dart';
 import 'api_service.dart';
 
@@ -24,11 +25,25 @@ class SignalRService {
 
     _isConnecting = true;
 
-    // Nếu cấu hình dùng API Gateway, chuyển trực tiếp qua Service URL cho SignalR
-    String serverUrl = "${ApiService.baseUrl}$_hubRoute";
-    if (ApiService.baseUrl.contains("prm-gateway.onrender.com")) {
-      serverUrl = "https://qr-order-api.onrender.com$_hubRoute";
+    // Đánh thức Order service trước khi kết nối SignalR
+    // (Render free-tier có thể mất 30-50s để khởi động)
+    try {
+      debugPrint('🔄 Waking up Order service...');
+      await http
+          .get(
+            Uri.parse('${ApiService.baseUrl}/api/orders'),
+            headers: ApiService.accessToken != null
+                ? {'Authorization': 'Bearer ${ApiService.accessToken}'}
+                : {},
+          )
+          .timeout(const Duration(seconds: 60));
+      debugPrint('✅ Order service is awake, starting SignalR...');
+    } catch (_) {
+      debugPrint('⚠️ Wake-up ping failed, proceeding with SignalR anyway');
     }
+
+    // Sử dụng trực tiếp ApiService.baseUrl để đi qua API Gateway
+    String serverUrl = "${ApiService.baseUrl}$_hubRoute";
 
     _hubConnection = HubConnectionBuilder()
         .withUrl(serverUrl, options: HttpConnectionOptions(
@@ -76,18 +91,24 @@ class SignalRService {
     }
 
     try {
-      // Timeout 10 giây — đủ thời gian cho Render cold start nhưng không spam log
+      debugPrint("========== SIGNALR TOKEN ==========");
+      debugPrint("Token: ${ApiService.accessToken}");
+      debugPrint("========== SIGNALR TOKEN ==========");
+      
+      // Timeout 90 giây — bao gồm cả cold start Render (30-50s) + handshake
       await _hubConnection!.start()!
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 90));
       debugPrint('✅ SignalR connected successfully to $serverUrl');
       _isConnecting = false;
-    } catch (e) {
-      debugPrint('⚠️ SignalR unavailable (polling fallback active): ${e.runtimeType}');
+    } catch (e, st) {
+      debugPrint("========== SIGNALR ERROR ==========");
+      debugPrint(e.toString());
+      debugPrint(st.toString());
       _isConnecting = false;
       _hubConnection = null;
-      // Thử lại sau 60 giây — im lặng để không spam log
+      // Thử lại sau 15 giây để kết nối nhanh hơn khi server đã khởi động xong
       _retryTimer?.cancel();
-      _retryTimer = Timer(const Duration(seconds: 60), () {
+      _retryTimer = Timer(const Duration(seconds: 15), () {
         init(onOrderCreated, onOrderStatusUpdated: onOrderStatusUpdated);
       });
     }
