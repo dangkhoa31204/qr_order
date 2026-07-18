@@ -153,7 +153,7 @@ class _StaffScreenState extends State<StaffScreen>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildOrdersTab(activeOrders, historicOrders),
+          _buildOrdersTab(activeOrders),
           _buildMenuTab(),
           TableManagementScreen(
             tables: widget.tables,
@@ -170,7 +170,7 @@ class _StaffScreenState extends State<StaffScreen>
   }
 
   // --- TAB 1: Real-time Order management ---
-  Widget _buildOrdersTab(List<OrderModel> active, List<OrderModel> history) {
+  Widget _buildOrdersTab(List<OrderModel> active) {
     return Column(
       children: [
         Padding(
@@ -181,7 +181,7 @@ class _StaffScreenState extends State<StaffScreen>
               Row(
                 children: [
                   Text(
-                    "DANH SÁCH ĐƠN HÀNG (${active.length + history.length})",
+                    "DANH SÁCH ĐƠN HÀNG (${active.length})",
                     style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
@@ -200,7 +200,7 @@ class _StaffScreenState extends State<StaffScreen>
           ),
         ),
         Expanded(
-          child: active.isEmpty && history.isEmpty
+          child: active.isEmpty
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -215,7 +215,7 @@ class _StaffScreenState extends State<StaffScreen>
                       ),
                       const SizedBox(height: 16),
                       const Text(
-                        "Chưa có đơn hàng nào gửi lên!",
+                        "Không có đơn hàng hoạt động!",
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
@@ -261,39 +261,6 @@ class _StaffScreenState extends State<StaffScreen>
                         separatorBuilder: (_, __) => const SizedBox(height: 16),
                         itemBuilder: (context, index) {
                           final o = active[index];
-                          return _buildOrderCard(o);
-                        },
-                      ),
-                      const SizedBox(height: 32),
-                    ],
-                    if (history.isNotEmpty) ...[
-                      const Row(
-                        children: [
-                          Icon(
-                            Icons.check_circle_outline,
-                            color: AromaColors.successGreen,
-                            size: 16,
-                          ),
-                          SizedBox(width: 6),
-                          Text(
-                            "LỊCH SỬ ĐÃ THANH TOÁN HOÀN TẤT",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 11,
-                              color: AromaColors.coffeeTextSub,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: history.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          final o = history[index];
                           return _buildOrderCard(o);
                         },
                       ),
