@@ -338,8 +338,56 @@ class _StaffScreenState extends State<StaffScreen>
             // Order meta
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                Expanded(
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AromaColors.coffeePrimary,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          order.tableLabel,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        "Mã: ${order.orderId}",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          color: AromaColors.coffeeTextDark,
+                        ),
+                      ),
+                      Text(
+                        "|  ${DateFormat('HH:mm  dd/MM/yyyy').format(order.createdAt.toLocal())}",
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AromaColors.coffeeTextSub,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -347,80 +395,46 @@ class _StaffScreenState extends State<StaffScreen>
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: AromaColors.coffeePrimary,
+                        color: order.status.color.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
-                        order.tableLabel,
-                        style: const TextStyle(
+                        order.status.labelVi,
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          fontSize: 12,
+                          color: order.status.color,
+                          fontSize: 11,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      "Mã: ${order.orderId}",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                        color: AromaColors.coffeeTextDark,
+                    if (order.status != OrderStatus.paid &&
+                        order.status != OrderStatus.cancelled &&
+                        order.items.any((i) => i.status == OrderItemStatus.pending)) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AromaColors.errorRed,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.new_releases, color: Colors.white, size: 12),
+                            SizedBox(width: 4),
+                            Text(
+                              "CÓ MÓN MỚI",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      "|  ${DateFormat('HH:mm  dd/MM/yyyy').format(order.createdAt.toLocal())}",
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AromaColors.coffeeTextSub,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                    ],
                   ],
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: order.status.color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    order.status.labelVi,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: order.status.color,
-                      fontSize: 11,
-                    ),
-                  ),
-                ),
-                if (order.items.any((i) => i.status == OrderItemStatus.pending)) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AromaColors.errorRed,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(Icons.new_releases, color: Colors.white, size: 12),
-                        SizedBox(width: 4),
-                        Text(
-                          "CÓ MÓN MỚI",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
               ],
             ),
             const Divider(height: 24),

@@ -5,6 +5,7 @@ import '../constants.dart';
 import '../models/item_model.dart';
 import '../models/account_model.dart';
 import '../models/feedback_model.dart';
+import '../widgets/dashboard_charts.dart';
 import 'table_management_screen.dart';
 
 class AdminScreen extends StatefulWidget {
@@ -187,8 +188,13 @@ class _AdminScreenState extends State<AdminScreen>
   Widget _buildAdminDashboardTab(List<OrderModel> history) {
     final paidOrders = history.where((o) => o.status == OrderStatus.paid).toList();
     
+    // Revenue calculations
+    final double totalRevenue = paidOrders.fold(0.0, (sum, o) => sum + o.totalAmount);
+    final double avgOrderValue = paidOrders.isEmpty ? 0.0 : totalRevenue / paidOrders.length;
+    final int totalCompletedOrders = paidOrders.length;
+    final int activeTablesCount = widget.tables.where((t) => t.status == TableStatus.occupied).toList().length;
+
     final now = DateTime.now();
-    
     int thisWeekCount = 0;
     int thisMonthCount = 0;
     int thisYearCount = 0;
@@ -206,67 +212,174 @@ class _AdminScreenState extends State<AdminScreen>
       }
     }
     
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Text(
-            "TỔNG QUAN ĐƠN HÀNG HOÀN THÀNH",
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: AromaColors.coffeePrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          // Real-time badge
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AromaColors.coffeeGold.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AromaColors.coffeeGold.withValues(alpha: 0.4)),
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "TỔNG QUAN HOẠT ĐỘNG",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AromaColors.coffeePrimary,
+                  ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: const BoxDecoration(
-                        color: Colors.green,
-                        shape: BoxShape.circle,
+                // Real-time badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AromaColors.coffeeGold.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AromaColors.coffeeGold.withValues(alpha: 0.4)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: const BoxDecoration(
+                          color: Colors.green,
+                          shape: BoxShape.circle,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 5),
-                    const Text(
-                      "SignalR live",
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: AromaColors.coffeePrimary,
-                        fontWeight: FontWeight.w600,
+                      const SizedBox(width: 5),
+                      const Text(
+                        "SignalR live",
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: AromaColors.coffeePrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            // Real-time hôm nay (nổi bật)
+            _buildRealtimeCard(widget.completedTodayCount),
+            const SizedBox(height: 16),
+            
+            // Statistics Grid
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 1.4,
+              children: [
+                _buildMetricCard(
+                  "TỔNG DOANH THU",
+                  formatVND(totalRevenue),
+                  Icons.monetization_on_rounded,
+                  Colors.green,
+                ),
+                _buildMetricCard(
+                  "ĐƠN HOÀN TẤT",
+                  totalCompletedOrders.toString(),
+                  Icons.shopping_bag_rounded,
+                  Colors.blue,
+                ),
+                _buildMetricCard(
+                  "TRUNG BÌNH ĐƠN",
+                  formatVND(avgOrderValue),
+                  Icons.receipt_long_rounded,
+                  Colors.orange,
+                ),
+                _buildMetricCard(
+                  "BÀN ĐANG PHỤC VỤ",
+                  "$activeTablesCount/${widget.tables.length}",
+                  Icons.table_restaurant_rounded,
+                  Colors.deepPurple,
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            
+            // Charts Section
+            const Text(
+              "BÁO CÁO CHI TIẾT",
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: AromaColors.coffeeTextSub,
+                letterSpacing: 0.8,
+              ),
+            ),
+            const SizedBox(height: 12),
+            
+            // 7 Days Sales Bar Chart
+            WeeklySalesChart(history: history),
+            const SizedBox(height: 20),
+            
+            // Category pie chart
+            CategoryDistributionChart(history: history, menuItems: widget.menuItems),
+            const SizedBox(height: 20),
+
+            // Hourly Line chart
+            HourlyTrafficChart(history: history),
+            const SizedBox(height: 20),
+            
+            // Historical statistics row (originally stat cards)
+            Row(
+              children: [
+                Expanded(child: _buildStatCard("Tuần này\n(7 ngày)", thisWeekCount, Icons.calendar_view_week)),
+                const SizedBox(width: 12),
+                Expanded(child: _buildStatCard("Tháng này", thisMonthCount, Icons.calendar_month)),
+                const SizedBox(width: 12),
+                Expanded(child: _buildStatCard("Năm nay", thisYearCount, Icons.calendar_today)),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMetricCard(String title, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AromaColors.coffeeCardBorder),
+        boxShadow: AromaStyles.softShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: AromaColors.coffeeTextSub,
+                  letterSpacing: 0.5,
                 ),
               ),
+              Icon(icon, size: 20, color: color.withOpacity(0.8)),
             ],
           ),
-          const SizedBox(height: 20),
-          // Real-time hôm nay (nổi bật)
-          _buildRealtimeCard(widget.completedTodayCount),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(child: _buildStatCard("Tuần này\n(7 ngày qua)", thisWeekCount, Icons.calendar_view_week)),
-              const SizedBox(width: 16),
-              Expanded(child: _buildStatCard("Tháng này", thisMonthCount, Icons.calendar_month)),
-              const SizedBox(width: 16),
-              Expanded(child: _buildStatCard("Năm nay", thisYearCount, Icons.calendar_today)),
-            ],
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AromaColors.coffeeTextDark,
+            ),
           ),
         ],
       ),
@@ -278,15 +391,15 @@ class _AdminScreenState extends State<AdminScreen>
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16.0),
         child: Column(
           children: [
-            Icon(icon, size: 32, color: AromaColors.coffeePrimary),
+            Icon(icon, size: 24, color: AromaColors.coffeePrimary),
             const SizedBox(height: 12),
             Text(
               count.toString(),
               style: const TextStyle(
-                fontSize: 28,
+                fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: AromaColors.coffeeTextDark,
               ),
@@ -296,7 +409,7 @@ class _AdminScreenState extends State<AdminScreen>
               title,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 11,
                 color: AromaColors.coffeeTextSub,
               ),
             ),
