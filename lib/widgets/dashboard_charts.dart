@@ -17,6 +17,7 @@ class WeeklySalesChart extends StatelessWidget {
     // Group sales by day for the last 7 days
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
+    final weekdaysVi = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
     final weeklyData = List.generate(7, (index) {
       final day = today.subtract(Duration(days: 6 - index));
       double total = 0;
@@ -29,7 +30,7 @@ class WeeklySalesChart extends StatelessWidget {
         }
       }
       return _BarData(
-        label: DateFormat('E', 'vi').format(day).toUpperCase(),
+        label: weekdaysVi[day.weekday % 7],
         value: total,
       );
     });
