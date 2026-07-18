@@ -1195,13 +1195,15 @@ class _StaffScreenState extends State<StaffScreen>
           ),
         );
       },
-    ).then((_) {
-      _activeQrOrderId = null;
-      _closeQrDialog = null;
-      dialogContext = null;
-      pollingTimer?.cancel();
-      countdownTimer?.cancel();
-    });
+    );
+  },
+).then((_) {
+  _activeQrOrderId = null;
+  _closeQrDialog = null;
+  dialogContext = null;
+  pollingTimer?.cancel();
+  countdownTimer?.cancel();
+});
   }
 
   Widget _buildQrDetailRow(String label, String value, {bool isBoldValue = false, bool isSelectable = false}) {
