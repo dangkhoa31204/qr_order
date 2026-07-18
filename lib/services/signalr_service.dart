@@ -32,8 +32,6 @@ class SignalRService {
       accessTokenFactory: () async {
         return ApiService.accessToken ?? "";
       },
-      transport: HttpTransportType.WebSockets,
-      skipNegotiation: true,
     ))
         .withAutomaticReconnect()
         .build();
