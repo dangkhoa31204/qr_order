@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:signalr_netcore/signalr_client.dart';
 import 'api_service.dart';
 
@@ -23,6 +24,23 @@ class SignalRService {
     }
 
     _isConnecting = true;
+
+    // Đánh thức Order service trước khi kết nối SignalR
+    // (Render free-tier có thể mất 30-50s để khởi động)
+    try {
+      debugPrint('🔄 Waking up Order service...');
+      await http
+          .get(
+            Uri.parse('${ApiService.baseUrl}/api/orders'),
+            headers: ApiService.accessToken != null
+                ? {'Authorization': 'Bearer ${ApiService.accessToken}'}
+                : {},
+          )
+          .timeout(const Duration(seconds: 60));
+      debugPrint('✅ Order service is awake, starting SignalR...');
+    } catch (_) {
+      debugPrint('⚠️ Wake-up ping failed, proceeding with SignalR anyway');
+    }
 
     // Sử dụng trực tiếp ApiService.baseUrl để đi qua API Gateway
     String serverUrl = "${ApiService.baseUrl}$_hubRoute";
