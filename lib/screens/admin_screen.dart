@@ -14,6 +14,7 @@ class AdminScreen extends StatefulWidget {
   final List<AccountModel> staffs;
   final List<FeedbackModel> feedbacks;
   final Function(int, OrderStatus) onUpdateOrderStatus;
+  final Function(int, int, OrderItemStatus) onUpdateOrderItemStatus;
   final Function(int) onToggleAvailability;
   final Function(MenuItem) onCreateMenuItem;
   final Function(MenuItem) onUpdateMenuItem;
@@ -40,6 +41,7 @@ class AdminScreen extends StatefulWidget {
     required this.feedbacks,
     required this.completedTodayCount,
     required this.onUpdateOrderStatus,
+    required this.onUpdateOrderItemStatus,
     required this.onToggleAvailability,
     required this.onCreateMenuItem,
     required this.onUpdateMenuItem,

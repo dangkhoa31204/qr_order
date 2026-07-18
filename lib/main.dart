@@ -214,6 +214,25 @@ class _MainGateScreenState extends State<MainGateScreen> {
     }
   }
 
+  Future<void> _updateOrderItemStatus(int orderId, int itemId, OrderItemStatus status) async {
+    setState(() {
+      final oIdx = _orderQueue.indexWhere((o) => o.orderId == orderId);
+      if (oIdx != -1) {
+        final order = _orderQueue[oIdx];
+        final iIdx = order.items.indexWhere((i) => i.orderItemId == itemId);
+        if (iIdx != -1) {
+          final newItems = List<OrderItemModel>.from(order.items);
+          newItems[iIdx] = newItems[iIdx].copyWith(status: status);
+          _orderQueue[oIdx] = order.copyWith(items: newItems);
+        }
+      }
+    });
+    final success = await ApiService.updateOrderItemStatus(orderId, itemId, status);
+    if (success) {
+      _loadBackendData();
+    }
+  }
+
   // Modify item availability
   Future<void> _toggleAvailability(int itemId) async {
     final success = await ApiService.toggleMenuItemAvailability(itemId);
@@ -377,6 +396,7 @@ class _MainGateScreenState extends State<MainGateScreen> {
         feedbacks: _feedbacks,
         completedTodayCount: _completedTodayCount,
         onUpdateOrderStatus: _updateOrderStatus,
+        onUpdateOrderItemStatus: _updateOrderItemStatus,
         onToggleAvailability: _toggleAvailability,
         onCreateMenuItem: _createMenuItem,
         onUpdateMenuItem: _updateMenuItem,
@@ -409,6 +429,7 @@ class _MainGateScreenState extends State<MainGateScreen> {
       menuItems: _menuItems,
       tables: _tables,
       onUpdateOrderStatus: _updateOrderStatus,
+      onUpdateOrderItemStatus: _updateOrderItemStatus,
       onToggleAvailability: _toggleAvailability,
       onUpdateTable: _updateTable,
       onExportQrCode: _exportQrCode,

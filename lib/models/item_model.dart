@@ -63,6 +63,78 @@ enum TableStatus {
 }
 
 /*==================================================
+  ORDER ITEM STATUS ENUM — khớp OrderItemStatus (INT)
+  1 = Pending, 2 = Preparing, 3 = Ready, 4 = Served
+==================================================*/
+enum OrderItemStatus {
+  pending(1),
+  preparing(2),
+  ready(3),
+  served(4);
+
+  final int value;
+  const OrderItemStatus(this.value);
+
+  Color get color {
+    switch (this) {
+      case OrderItemStatus.pending:
+        return AromaColors.pendingOrange;
+      case OrderItemStatus.preparing:
+        return AromaColors.preparingBlue;
+      case OrderItemStatus.ready:
+        return AromaColors.successGreen;
+      case OrderItemStatus.served:
+        return AromaColors.coffeeTextSub;
+    }
+  }
+
+  String get labelVi {
+    switch (this) {
+      case OrderItemStatus.pending:
+        return "Chờ chế biến";
+      case OrderItemStatus.preparing:
+        return "Đang chế biến";
+      case OrderItemStatus.ready:
+        return "Sẵn sàng";
+      case OrderItemStatus.served:
+        return "Đã phục vụ";
+    }
+  }
+
+  static OrderItemStatus fromInt(int v) {
+    switch (v) {
+      case 1: return OrderItemStatus.pending;
+      case 2: return OrderItemStatus.preparing;
+      case 3: return OrderItemStatus.ready;
+      case 4: return OrderItemStatus.served;
+      default: return OrderItemStatus.pending;
+    }
+  }
+
+  static OrderItemStatus fromString(String text) {
+    switch (text.toLowerCase()) {
+      case 'preparing':
+      case 'đang chế biến':
+      case '2':
+        return OrderItemStatus.preparing;
+      case 'ready':
+      case 'sẵn sàng':
+      case '3':
+        return OrderItemStatus.ready;
+      case 'served':
+      case 'đã phục vụ':
+      case '4':
+        return OrderItemStatus.served;
+      case 'pending':
+      case 'chờ chế biến':
+      case '1':
+      default:
+        return OrderItemStatus.pending;
+    }
+  }
+}
+
+/*==================================================
   ORDER STATUS ENUM — khớp Orders.Status (INT)
   1 = Pending, 2 = Preparing, 3 = Ready, 4 = Paid, 5 = Cancelled
 ==================================================*/
@@ -305,6 +377,8 @@ class OrderItemModel {
   final double unitPrice;
   final String? note;
   final String? menuItemName;
+  final DateTime createdAt;
+  final OrderItemStatus status;
 
   // Không có trong DB, dùng để hiển thị UI
   final MenuItem? menuItemRef;
@@ -317,8 +391,10 @@ class OrderItemModel {
     required this.unitPrice,
     this.note,
     this.menuItemName,
+    DateTime? createdAt,
+    this.status = OrderItemStatus.pending,
     this.menuItemRef,
-  });
+  }) : createdAt = createdAt ?? DateTime.now();
 
   factory OrderItemModel.fromJson(Map<String, dynamic> json, {MenuItem? menuItemRef}) {
     return OrderItemModel(
@@ -329,6 +405,12 @@ class OrderItemModel {
       unitPrice: (json['unitPrice'] as num?)?.toDouble() ?? 0.0,
       note: json['note']?.toString(),
       menuItemName: json['menuItemName']?.toString(),
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
+          : DateTime.now(),
+      status: json['statusLabel'] != null
+          ? OrderItemStatus.fromString(json['statusLabel'].toString())
+          : (json['status'] is int ? OrderItemStatus.fromInt(json['status'] as int) : OrderItemStatus.pending),
       menuItemRef: menuItemRef,
     );
   }
@@ -342,6 +424,8 @@ class OrderItemModel {
       'unitPrice': unitPrice,
       'note': note,
       'menuItemName': menuItemName,
+      'createdAt': createdAt.toIso8601String(),
+      'status': status.value,
     };
   }
 
@@ -353,6 +437,8 @@ class OrderItemModel {
     double? unitPrice,
     String? note,
     String? menuItemName,
+    DateTime? createdAt,
+    OrderItemStatus? status,
     MenuItem? menuItemRef,
   }) {
     return OrderItemModel(
@@ -363,6 +449,8 @@ class OrderItemModel {
       unitPrice: unitPrice ?? this.unitPrice,
       note: note ?? this.note,
       menuItemName: menuItemName ?? this.menuItemName,
+      createdAt: createdAt ?? this.createdAt,
+      status: status ?? this.status,
       menuItemRef: menuItemRef ?? this.menuItemRef,
     );
   }
@@ -378,6 +466,7 @@ class OrderModel {
   final OrderStatus status;
   final double totalAmount;
   final String? note;
+  final String? publicToken;
   final DateTime createdAt;
   final DateTime? updatedAt;
   final List<OrderItemModel> items;
@@ -389,6 +478,7 @@ class OrderModel {
     this.status = OrderStatus.pending,
     this.totalAmount = 0,
     this.note,
+    this.publicToken,
     DateTime? createdAt,
     this.updatedAt,
     this.items = const [],
@@ -412,6 +502,7 @@ class OrderModel {
           : OrderStatus.fromString(json['status']?.toString() ?? 'pending'),
       totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0.0,
       note: json['note']?.toString(),
+      publicToken: json['publicToken']?.toString(),
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
           : DateTime.now(),
@@ -430,6 +521,7 @@ class OrderModel {
       'status': status.value,
       'totalAmount': totalAmount,
       'note': note,
+      'publicToken': publicToken,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
       'items': items.map((it) => it.toJson()).toList(),
@@ -443,6 +535,7 @@ class OrderModel {
     OrderStatus? status,
     double? totalAmount,
     String? note,
+    String? publicToken,
     DateTime? createdAt,
     DateTime? updatedAt,
     List<OrderItemModel>? items,
@@ -454,6 +547,7 @@ class OrderModel {
       status: status ?? this.status,
       totalAmount: totalAmount ?? this.totalAmount,
       note: note ?? this.note,
+      publicToken: publicToken ?? this.publicToken,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       items: items ?? this.items,
