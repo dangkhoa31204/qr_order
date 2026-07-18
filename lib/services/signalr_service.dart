@@ -36,9 +36,6 @@ class SignalRService {
         .withAutomaticReconnect()
         .build();
 
-    // Tăng timeout bắt tay lên 60 giây — Render cold start thường mất 30-50 giây
-    _hubConnection!.handshakeResponseTimeout = 60000;
-
     // Lắng nghe sự kiện OrderCreated
     _hubConnection!.on("OrderCreated", (arguments) {
       debugPrint('🔔 SignalR received: OrderCreated');
@@ -80,9 +77,9 @@ class SignalRService {
       debugPrint("Token: ${ApiService.accessToken}");
       debugPrint("========== SIGNALR TOKEN ==========");
       
-      // Timeout 30 giây — đủ thời gian cho Render cold start
+      // Timeout 90 giây — bao gồm cả cold start Render (30-50s) + handshake
       await _hubConnection!.start()!
-          .timeout(const Duration(seconds: 30));
+          .timeout(const Duration(seconds: 90));
       debugPrint('✅ SignalR connected successfully to $serverUrl');
       _isConnecting = false;
     } catch (e, st) {
