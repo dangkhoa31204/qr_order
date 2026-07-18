@@ -321,6 +321,8 @@ class _StaffScreenState extends State<StaffScreen>
       nextStatus = OrderStatus.paid;
     }
 
+    final bool allItemsServed = order.items.isNotEmpty && order.items.every((it) => it.status == OrderItemStatus.served);
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -671,10 +673,10 @@ class _StaffScreenState extends State<StaffScreen>
               const SizedBox(height: 16),
               if (order.status == OrderStatus.ready) ...[
                 ElevatedButton(
-                  onPressed: () => _showSepayQrDialog(order),
+                  onPressed: allItemsServed ? () => _showSepayQrDialog(order) : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AromaColors.preparingBlue,
-                    foregroundColor: Colors.white,
+                    backgroundColor: allItemsServed ? AromaColors.preparingBlue : Colors.grey.shade300,
+                    foregroundColor: allItemsServed ? Colors.white : Colors.grey.shade500,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -691,6 +693,18 @@ class _StaffScreenState extends State<StaffScreen>
                     ),
                   ),
                 ),
+                if (!allItemsServed) ...[
+                  const SizedBox(height: 6),
+                  const Text(
+                    "⚠️ Chưa thể tạo mã QR. Còn món chưa phục vụ xong.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: AromaColors.errorRed,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 8),
                 TextButton.icon(
                   onPressed: () =>
