@@ -251,7 +251,7 @@ class _AdminScreenState extends State<AdminScreen>
                       ),
                       const SizedBox(width: 5),
                       const Text(
-                        "SignalR live",
+                        "Trực tuyến",
                         style: TextStyle(
                           fontSize: 10,
                           color: AromaColors.coffeePrimary,
