@@ -87,11 +87,11 @@ class ApiService {
               "password": password,
             }),
           )
-          .timeout(const Duration(seconds: 60)); // Render.com cold start có thể mất 30-60s
+          .timeout(const Duration(
+              seconds: 60)); // Render.com cold start có thể mất 30-60s
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        final loginResponse =
-            LoginResponse.fromJson(jsonDecode(response.body));
+        final loginResponse = LoginResponse.fromJson(jsonDecode(response.body));
         _accessToken = loginResponse.accessToken;
         _tokenExpiresAt = loginResponse.expiresAt;
         final account = loginResponse.toAccountModel();
@@ -141,7 +141,8 @@ class ApiService {
       final List rawList = result["data"];
       return rawList.map((item) => MenuItem.fromJson(item)).toList();
     } else {
-      debugPrint('ApiService.fetchMenuItems failed: ${result["error"]}. Utilizing mock fallback.');
+      debugPrint(
+          'ApiService.fetchMenuItems failed: ${result["error"]}. Utilizing mock fallback.');
       return _mockMenuItems;
     }
   }
@@ -156,15 +157,17 @@ class ApiService {
         request.headers["Authorization"] = "Bearer $_accessToken";
       }
       request.files.add(await http.MultipartFile.fromPath('file', filePath));
-      
-      final streamedResponse = await request.send().timeout(const Duration(seconds: 20));
+
+      final streamedResponse =
+          await request.send().timeout(const Duration(seconds: 20));
       final response = await http.Response.fromStream(streamedResponse);
-      
+
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final decoded = jsonDecode(response.body);
         return decoded["imageUrl"] as String?;
       } else {
-        debugPrint("Upload image failed with status: ${response.statusCode}, body: ${response.body}");
+        debugPrint(
+            "Upload image failed with status: ${response.statusCode}, body: ${response.body}");
       }
     } catch (e) {
       debugPrint("Error uploading image: $e");
@@ -174,7 +177,9 @@ class ApiService {
 
   static Future<bool> createMenuItem(MenuItem item) async {
     var finalItem = item;
-    if (item.imageUrl != null && item.imageUrl!.isNotEmpty && !item.imageUrl!.startsWith('http')) {
+    if (item.imageUrl != null &&
+        item.imageUrl!.isNotEmpty &&
+        !item.imageUrl!.startsWith('http')) {
       final file = File(item.imageUrl!);
       if (await file.exists()) {
         final uploadedUrl = await uploadImage(item.imageUrl!);
@@ -196,7 +201,8 @@ class ApiService {
             body: jsonEncode(finalItem.toJson()),
           )
           .timeout(const Duration(seconds: 10));
-      return (response.statusCode >= 200 && response.statusCode < 300) || useMockFallback;
+      return (response.statusCode >= 200 && response.statusCode < 300) ||
+          useMockFallback;
     } catch (_) {
       return useMockFallback;
     }
@@ -204,7 +210,9 @@ class ApiService {
 
   static Future<bool> updateMenuItem(MenuItem item) async {
     var finalItem = item;
-    if (item.imageUrl != null && item.imageUrl!.isNotEmpty && !item.imageUrl!.startsWith('http')) {
+    if (item.imageUrl != null &&
+        item.imageUrl!.isNotEmpty &&
+        !item.imageUrl!.startsWith('http')) {
       final file = File(item.imageUrl!);
       if (await file.exists()) {
         final uploadedUrl = await uploadImage(item.imageUrl!);
@@ -217,7 +225,8 @@ class ApiService {
         finalItem = item.copyWith(clearImageUrl: true);
       }
     }
-    final idx = _mockMenuItems.indexWhere((it) => it.menuItemId == finalItem.menuItemId);
+    final idx = _mockMenuItems
+        .indexWhere((it) => it.menuItemId == finalItem.menuItemId);
     if (idx != -1) {
       _mockMenuItems[idx] = finalItem;
     }
@@ -229,7 +238,8 @@ class ApiService {
             body: jsonEncode(finalItem.toJson()),
           )
           .timeout(const Duration(seconds: 10));
-      return (response.statusCode >= 200 && response.statusCode < 300) || useMockFallback;
+      return (response.statusCode >= 200 && response.statusCode < 300) ||
+          useMockFallback;
     } catch (_) {
       return useMockFallback;
     }
@@ -244,7 +254,8 @@ class ApiService {
             headers: _authHeaders,
           )
           .timeout(const Duration(seconds: 10));
-      return (response.statusCode >= 200 && response.statusCode < 300) || useMockFallback;
+      return (response.statusCode >= 200 && response.statusCode < 300) ||
+          useMockFallback;
     } catch (_) {
       return useMockFallback;
     }
@@ -265,7 +276,8 @@ class ApiService {
             headers: _authHeaders,
           )
           .timeout(const Duration(seconds: 10));
-      return (response.statusCode >= 200 && response.statusCode < 300) || useMockFallback;
+      return (response.statusCode >= 200 && response.statusCode < 300) ||
+          useMockFallback;
     } catch (_) {
       return useMockFallback;
     }
@@ -280,7 +292,8 @@ class ApiService {
       final List rawList = result["data"];
       return rawList.map((item) => OrderModel.fromJson(item)).toList();
     } else {
-      debugPrint('ApiService.fetchOrderQueue failed: ${result["error"]}. Utilizing mock fallback.');
+      debugPrint(
+          'ApiService.fetchOrderQueue failed: ${result["error"]}. Utilizing mock fallback.');
       return _mockOrderQueue;
     }
   }
@@ -304,7 +317,8 @@ class ApiService {
             body: jsonEncode(order.toJson()),
           )
           .timeout(const Duration(seconds: 10));
-      return (response.statusCode >= 200 && response.statusCode < 300) || useMockFallback;
+      return (response.statusCode >= 200 && response.statusCode < 300) ||
+          useMockFallback;
     } catch (_) {
       return useMockFallback;
     }
@@ -344,7 +358,8 @@ class ApiService {
         }
 
         lastResponse = patchResponse;
-        if (patchResponse.statusCode != 405 && patchResponse.statusCode != 400) {
+        if (patchResponse.statusCode != 405 &&
+            patchResponse.statusCode != 400) {
           break;
         }
 
@@ -366,7 +381,8 @@ class ApiService {
         }
       }
 
-      debugPrint('❌ Lỗi Cập Nhật Đơn $orderId: Server trả về ${lastResponse?.statusCode} - ${lastResponse?.body}');
+      debugPrint(
+          '❌ Lỗi Cập Nhật Đơn $orderId: Server trả về ${lastResponse?.statusCode} - ${lastResponse?.body}');
       return useMockFallback;
     } catch (e) {
       debugPrint('❌ Lỗi Mạng Cập Nhật Đơn: $e');
@@ -405,7 +421,8 @@ class ApiService {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return true;
       }
-      debugPrint('❌ Lỗi Cập Nhật Món $orderItemId: Server trả về ${response.statusCode} - ${response.body}');
+      debugPrint(
+          '❌ Lỗi Cập Nhật Món $orderItemId: Server trả về ${response.statusCode} - ${response.body}');
       return useMockFallback;
     } catch (e) {
       debugPrint('❌ Lỗi Mạng Cập Nhật Món: $e');
@@ -424,7 +441,8 @@ class ApiService {
       final List rawList = result["data"];
       return rawList.map((item) => TableModel.fromJson(item)).toList();
     } else {
-      debugPrint('ApiService.fetchTables failed: ${result["error"]}. Utilizing mock fallback.');
+      debugPrint(
+          'ApiService.fetchTables failed: ${result["error"]}. Utilizing mock fallback.');
       return _mockTables;
     }
   }
@@ -447,7 +465,8 @@ class ApiService {
             }),
           )
           .timeout(const Duration(seconds: 10));
-      return (response.statusCode >= 200 && response.statusCode < 300) || useMockFallback;
+      return (response.statusCode >= 200 && response.statusCode < 300) ||
+          useMockFallback;
     } catch (_) {
       return useMockFallback;
     }
@@ -473,7 +492,8 @@ class ApiService {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return true;
       }
-      debugPrint("❌ Lỗi Cập Nhật Bàn ${table.tableId}: Server trả về ${response.statusCode} - ${response.body}");
+      debugPrint(
+          "❌ Lỗi Cập Nhật Bàn ${table.tableId}: Server trả về ${response.statusCode} - ${response.body}");
       return useMockFallback;
     } catch (e) {
       debugPrint("❌ Lỗi Mạng Cập Nhật Bàn: $e");
@@ -494,7 +514,8 @@ class ApiService {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return true;
       }
-      debugPrint("❌ Lỗi Xóa Bàn $tableId: Server trả về ${response.statusCode} - ${response.body}");
+      debugPrint(
+          "❌ Lỗi Xóa Bàn $tableId: Server trả về ${response.statusCode} - ${response.body}");
       return useMockFallback;
     } catch (e) {
       debugPrint("❌ Lỗi Mạng Xóa Bàn: $e");
@@ -511,7 +532,8 @@ class ApiService {
       final List rawList = result["data"];
       return rawList.map((item) => AccountModel.fromJson(item)).toList();
     } else {
-      debugPrint('ApiService.fetchStaffs failed: ${result["error"]}. Utilizing mock fallback.');
+      debugPrint(
+          'ApiService.fetchStaffs failed: ${result["error"]}. Utilizing mock fallback.');
       return _mockAccounts.where((a) => a.role == AccountRole.staff).toList();
     }
   }
@@ -521,7 +543,8 @@ class ApiService {
     for (var a in _mockAccounts) {
       if (a.accountId > maxId) maxId = a.accountId;
     }
-    final mockStaff = staff.copyWith(accountId: maxId + 1, passwordHash: password);
+    final mockStaff =
+        staff.copyWith(accountId: maxId + 1, passwordHash: password);
     _mockAccounts.add(mockStaff);
 
     try {
@@ -538,7 +561,8 @@ class ApiService {
             }),
           )
           .timeout(const Duration(seconds: 10));
-      return (response.statusCode >= 200 && response.statusCode < 300) || useMockFallback;
+      return (response.statusCode >= 200 && response.statusCode < 300) ||
+          useMockFallback;
     } catch (_) {
       return useMockFallback;
     }
@@ -564,7 +588,8 @@ class ApiService {
             }),
           )
           .timeout(const Duration(seconds: 10));
-      return (response.statusCode >= 200 && response.statusCode < 300) || useMockFallback;
+      return (response.statusCode >= 200 && response.statusCode < 300) ||
+          useMockFallback;
     } catch (_) {
       return useMockFallback;
     }
@@ -583,7 +608,8 @@ class ApiService {
             headers: _authHeaders,
           )
           .timeout(const Duration(seconds: 10));
-      return (response.statusCode >= 200 && response.statusCode < 300) || useMockFallback;
+      return (response.statusCode >= 200 && response.statusCode < 300) ||
+          useMockFallback;
     } catch (_) {
       return useMockFallback;
     }
@@ -619,7 +645,8 @@ class ApiService {
       final List rawList = result["data"];
       return rawList.map((item) => FeedbackModel.fromJson(item)).toList();
     } else {
-      debugPrint('ApiService.fetchFeedbacks failed: ${result["error"]}. Utilizing mock fallback.');
+      debugPrint(
+          'ApiService.fetchFeedbacks failed: ${result["error"]}. Utilizing mock fallback.');
       return _mockFeedbacks;
     }
   }
@@ -646,9 +673,51 @@ class ApiService {
             headers: _authHeaders,
           )
           .timeout(const Duration(seconds: 10));
-      return (response.statusCode >= 200 && response.statusCode < 300) || useMockFallback;
+      return (response.statusCode >= 200 && response.statusCode < 300) ||
+          useMockFallback;
     } catch (_) {
       return useMockFallback;
+    }
+  }
+
+  /// Gửi tin nhắn chat tới AI Assistant (Qwen) cho Staff/Admin
+  static Future<String> sendStaffAiChat(List<Map<String, String>> messages) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse("$baseUrl/api/ai/staff-chat"),
+            headers: _authHeaders,
+            body: jsonEncode({"messages": messages}),
+          )
+          .timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data["reply"] ?? "Không nhận được phản hồi từ AI.";
+      }
+      return "Lỗi từ server AI (${response.statusCode}).";
+    } catch (e) {
+      return "Không thể kết nối tới dịch vụ AI. Vui lòng kiểm tra lại kết nối mạng.";
+    }
+  }
+
+  /// Phân tích giọng nói order món ăn thành dữ liệu JSON
+  static Future<Map<String, dynamic>> parseVoiceOrder(String voiceText, {int? tableId}) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse("$baseUrl/api/ai/parse-voice"),
+            headers: _authHeaders,
+            body: jsonEncode({"voiceText": voiceText, "tableId": tableId}),
+          )
+          .timeout(const Duration(seconds: 20));
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return {"success": false, "message": "Server trả về lỗi: ${response.statusCode}"};
+    } catch (e) {
+      return {"success": false, "message": "Không thể kết nối AI voice parser."};
     }
   }
 }
