@@ -16,6 +16,7 @@ class SignalRService {
   static Future<void> init(
     Function onOrderCreated, {
     Function(int orderId, String newStatus)? onOrderStatusUpdated,
+    VoidCallback? onConnected,
   }) async {
     if (_isConnecting) return;
     if (_hubConnection != null &&
@@ -107,6 +108,9 @@ class SignalRService {
           .timeout(const Duration(seconds: 90));
       debugPrint('✅ SignalR connected successfully to $serverUrl');
       _isConnecting = false;
+      if (onConnected != null) {
+        onConnected();
+      }
     } catch (e, st) {
       debugPrint("========== SIGNALR ERROR ==========");
       debugPrint(e.toString());
@@ -116,7 +120,7 @@ class SignalRService {
       // Thử lại sau 15 giây để kết nối nhanh hơn khi server đã khởi động xong
       _retryTimer?.cancel();
       _retryTimer = Timer(const Duration(seconds: 15), () {
-        init(onOrderCreated, onOrderStatusUpdated: onOrderStatusUpdated);
+        init(onOrderCreated, onOrderStatusUpdated: onOrderStatusUpdated, onConnected: onConnected);
       });
     }
   }

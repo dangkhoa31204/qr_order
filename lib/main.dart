@@ -331,8 +331,10 @@ class _MainGateScreenState extends State<MainGateScreen> {
       _currentUser = account;
       _completedTodayCount = 0;
     });
-    _loadBackendData();
-    // Khởi tạo SignalR ngay sau khi login thành công
+
+    // Khởi tạo SignalR ngay sau khi login thành công.
+    // Dữ liệu chỉ được tải sau khi SignalR kết nối thành công (khi server đã hoàn thành khởi động/thức giấc)
+    // để tránh việc các API request bị timeout (30s) trong quá trình cold start của Render.
     SignalRService.init(
       () {
         _loadBackendData();
@@ -365,6 +367,9 @@ class _MainGateScreenState extends State<MainGateScreen> {
         }
 
         // Reload để cập nhật danh sách đơn
+        _loadBackendData();
+      },
+      onConnected: () {
         _loadBackendData();
       },
     );
