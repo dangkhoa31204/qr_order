@@ -50,6 +50,7 @@ class SignalRService {
       accessTokenFactory: () async {
         return ApiService.accessToken ?? "";
       },
+      requestTimeout: 30000, // Tăng timeout của client lên 30s (mặc định là 2s, quá ngắn đối với Render free tier)
     ))
         .withAutomaticReconnect()
         .build();
