@@ -68,6 +68,24 @@ class SignalRService {
       onOrderCreated(); // Tải lại danh sách đơn
     });
 
+    // Lắng nghe sự kiện PaymentUpdated (khi trạng thái thanh toán thay đổi)
+    _hubConnection!.on("PaymentUpdated", (arguments) {
+      debugPrint('🔔 SignalR received: PaymentUpdated');
+      onOrderCreated(); // Tải lại toàn bộ dữ liệu để cập nhật Dashboard
+    });
+
+    // Lắng nghe sự kiện FeedbackCreated (khi khách hàng gửi phản hồi mới)
+    _hubConnection!.on("FeedbackCreated", (arguments) {
+      debugPrint('🔔 SignalR received: FeedbackCreated');
+      onOrderCreated(); // Tải lại toàn bộ dữ liệu để cập nhật danh sách Feedback
+    });
+
+    // Lắng nghe sự kiện FeedbackVisibilityChanged (khi Admin ẩn/hiện phản hồi)
+    _hubConnection!.on("FeedbackVisibilityChanged", (arguments) {
+      debugPrint('🔔 SignalR received: FeedbackVisibilityChanged');
+      onOrderCreated(); // Tải lại toàn bộ dữ liệu để cập nhật danh sách Feedback
+    });
+
     // Lắng nghe sự kiện OrderStatusUpdated
     if (onOrderStatusUpdated != null) {
       _hubConnection!.on("OrderStatusUpdated", (arguments) {
