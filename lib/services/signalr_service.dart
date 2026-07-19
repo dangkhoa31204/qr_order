@@ -61,6 +61,12 @@ class SignalRService {
       onOrderCreated();
     });
 
+    // Lắng nghe sự kiện OrderUpdated (khi khách gọi thêm món)
+    _hubConnection!.on("OrderUpdated", (arguments) {
+      debugPrint('🔔 SignalR received: OrderUpdated');
+      onOrderCreated(); // Tải lại danh sách đơn
+    });
+
     // Lắng nghe sự kiện OrderStatusUpdated
     if (onOrderStatusUpdated != null) {
       _hubConnection!.on("OrderStatusUpdated", (arguments) {
