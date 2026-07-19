@@ -16,6 +16,7 @@ class SignalRService {
   static Future<void> init(
     Function onOrderCreated, {
     Function(int orderId, String newStatus)? onOrderStatusUpdated,
+    VoidCallback? onConnected,
   }) async {
     if (_isConnecting) return;
     if (_hubConnection != null &&
@@ -50,6 +51,7 @@ class SignalRService {
       accessTokenFactory: () async {
         return ApiService.accessToken ?? "";
       },
+      requestTimeout: 30000, // Tăng timeout của client lên 30s (mặc định là 2s, quá ngắn đối với Render free tier)
     ))
         .withAutomaticReconnect()
         .build();
@@ -58,6 +60,12 @@ class SignalRService {
     _hubConnection!.on("OrderCreated", (arguments) {
       debugPrint('🔔 SignalR received: OrderCreated');
       onOrderCreated();
+    });
+
+    // Lắng nghe sự kiện OrderUpdated (khi khách gọi thêm món)
+    _hubConnection!.on("OrderUpdated", (arguments) {
+      debugPrint('🔔 SignalR received: OrderUpdated');
+      onOrderCreated(); // Tải lại danh sách đơn
     });
 
     // Lắng nghe sự kiện OrderStatusUpdated
@@ -100,6 +108,9 @@ class SignalRService {
           .timeout(const Duration(seconds: 90));
       debugPrint('✅ SignalR connected successfully to $serverUrl');
       _isConnecting = false;
+      if (onConnected != null) {
+        onConnected();
+      }
     } catch (e, st) {
       debugPrint("========== SIGNALR ERROR ==========");
       debugPrint(e.toString());
@@ -109,7 +120,7 @@ class SignalRService {
       // Thử lại sau 15 giây để kết nối nhanh hơn khi server đã khởi động xong
       _retryTimer?.cancel();
       _retryTimer = Timer(const Duration(seconds: 15), () {
-        init(onOrderCreated, onOrderStatusUpdated: onOrderStatusUpdated);
+        init(onOrderCreated, onOrderStatusUpdated: onOrderStatusUpdated, onConnected: onConnected);
       });
     }
   }
