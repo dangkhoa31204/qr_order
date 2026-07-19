@@ -470,6 +470,8 @@ class OrderModel {
   final DateTime createdAt;
   final DateTime? updatedAt;
   final List<OrderItemModel> items;
+  final int? paymentMethod;
+  final String? paymentMethodLabel;
 
   OrderModel({
     required this.orderId,
@@ -482,6 +484,8 @@ class OrderModel {
     DateTime? createdAt,
     this.updatedAt,
     this.items = const [],
+    this.paymentMethod,
+    this.paymentMethodLabel,
   }) : createdAt = createdAt ?? DateTime.now();
 
   /// Tự sinh tableLabel từ tableId
@@ -510,6 +514,8 @@ class OrderModel {
           ? DateTime.tryParse(json['updatedAt'].toString())
           : null,
       items: itemList,
+      paymentMethod: json['paymentMethod'] as int?,
+      paymentMethodLabel: json['paymentMethodLabel']?.toString(),
     );
   }
 
@@ -525,6 +531,8 @@ class OrderModel {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
       'items': items.map((it) => it.toJson()).toList(),
+      'paymentMethod': paymentMethod,
+      'paymentMethodLabel': paymentMethodLabel,
     };
   }
 
@@ -539,6 +547,8 @@ class OrderModel {
     DateTime? createdAt,
     DateTime? updatedAt,
     List<OrderItemModel>? items,
+    int? paymentMethod,
+    String? paymentMethodLabel,
   }) {
     return OrderModel(
       orderId: orderId ?? this.orderId,
@@ -551,6 +561,8 @@ class OrderModel {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       items: items ?? this.items,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      paymentMethodLabel: paymentMethodLabel ?? this.paymentMethodLabel,
     );
   }
 }

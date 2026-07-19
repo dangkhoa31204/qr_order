@@ -268,6 +268,10 @@ class _AdminScreenState extends State<AdminScreen>
             _buildRealtimeCard(widget.completedTodayCount),
             const SizedBox(height: 16),
             
+            // Phân tích phương thức thanh toán hôm nay
+            _buildPaymentMethodBreakdownCard(paidOrders.where((o) => o.createdAt.toLocal().isAfter(DateTime(now.year, now.month, now.day))).toList()),
+            const SizedBox(height: 16),
+            
             // Statistics Grid
             GridView.count(
               crossAxisCount: 2,
@@ -468,6 +472,149 @@ class _AdminScreenState extends State<AdminScreen>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPaymentMethodBreakdownCard(List<OrderModel> todayPaidOrders) {
+    final cashOrders = todayPaidOrders.where((o) => o.paymentMethod == 1).toList();
+    final onlineOrders = todayPaidOrders.where((o) => o.paymentMethod != null && o.paymentMethod != 1).toList();
+
+    final int cashCount = cashOrders.length;
+    final double cashSum = cashOrders.fold(0.0, (sum, o) => sum + o.totalAmount);
+
+    final int onlineCount = onlineOrders.length;
+    final double onlineSum = onlineOrders.fold(0.0, (sum, o) => sum + o.totalAmount);
+
+    final double totalTodaySum = cashSum + onlineSum;
+    final double cashPercent = totalTodaySum == 0 ? 0.0 : (cashSum / totalTodaySum);
+    final double onlinePercent = totalTodaySum == 0 ? 0.0 : (onlineSum / totalTodaySum);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AromaColors.coffeeCardBorder),
+        boxShadow: AromaStyles.softShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.analytics_rounded, color: AromaColors.coffeePrimary, size: 20),
+              SizedBox(width: 8),
+              Text(
+                "PHÂN TÍCH DOANH THU HÔM NAY",
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: AromaColors.coffeePrimary,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Progress bar split
+          if (totalTodaySum > 0) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: SizedBox(
+                height: 10,
+                child: Row(
+                  children: [
+                    if (cashPercent > 0)
+                      Expanded(
+                        flex: (cashPercent * 100).round(),
+                        child: Container(color: Colors.amber[700]),
+                      ),
+                    if (onlinePercent > 0)
+                      Expanded(
+                        flex: (onlinePercent * 100).round(),
+                        child: Container(color: Colors.blue[600]),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+          ],
+          Row(
+            children: [
+              // Cash info
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 4,
+                      height: 36,
+                      color: Colors.amber[700],
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "TIỀN MẶT",
+                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AromaColors.coffeeTextSub),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            formatVND(cashSum),
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AromaColors.coffeeTextDark),
+                          ),
+                          Text(
+                            "$cashCount đơn hàng",
+                            style: const TextStyle(fontSize: 10, color: AromaColors.coffeeTextSub),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Online info
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 4,
+                      height: 36,
+                      color: Colors.blue[600],
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "ONLINE / CHUYỂN KHOẢN",
+                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AromaColors.coffeeTextSub),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            formatVND(onlineSum),
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AromaColors.coffeeTextDark),
+                          ),
+                          Text(
+                            "$onlineCount đơn hàng",
+                            style: const TextStyle(fontSize: 10, color: AromaColors.coffeeTextSub),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

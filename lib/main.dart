@@ -115,7 +115,15 @@ class _MainGateScreenState extends State<MainGateScreen> {
   List<FeedbackModel> _feedbacks = [];
 
   // Đếm đơn hoàn thành hôm nay (real-time qua SignalR)
-  int _completedTodayCount = 0;
+  int get _completedTodayCount {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    return _orderQueue
+        .where((o) =>
+            o.status == OrderStatus.paid &&
+            o.createdAt.toLocal().isAfter(todayStart))
+        .length;
+  }
 
   bool _isLoading = false;
 
@@ -199,7 +207,6 @@ class _MainGateScreenState extends State<MainGateScreen> {
         _orderQueue[idx] = _orderQueue[idx].copyWith(status: status);
       }
       if (status == OrderStatus.paid) {
-        _completedTodayCount++;
         final order = _orderQueue[idx];
         final tIdx = _tables.indexWhere((t) => t.tableId == order.tableId);
         if (tIdx != -1) {
@@ -329,7 +336,6 @@ class _MainGateScreenState extends State<MainGateScreen> {
     setState(() {
       _isLoggedIn = true;
       _currentUser = account;
-      _completedTodayCount = 0;
     });
 
     // Khởi tạo SignalR ngay sau khi login thành công.
@@ -351,7 +357,6 @@ class _MainGateScreenState extends State<MainGateScreen> {
               _orderQueue[idx] = _orderQueue[idx].copyWith(status: orderStatus);
             }
             if (orderStatus == OrderStatus.paid) {
-              _completedTodayCount++;
               final order = _orderQueue.firstWhere(
                 (o) => o.orderId == orderId,
                 orElse: () => OrderModel(orderId: -1, tableId: -1),
@@ -421,7 +426,6 @@ class _MainGateScreenState extends State<MainGateScreen> {
           setState(() {
             _isLoggedIn = false;
             _currentUser = null;
-            _completedTodayCount = 0;
           });
         },
         onRefreshData: _handleManualRefresh,
