@@ -80,8 +80,6 @@ class _StaffScreenState extends State<StaffScreen>
     // Separate active order vs historic/paid orders
     final activeOrders =
         widget.orders.where((o) => o.status != OrderStatus.paid && o.status != OrderStatus.cancelled).toList();
-    final historicOrders =
-        widget.orders.where((o) => o.status == OrderStatus.paid || o.status == OrderStatus.cancelled).toList();
 
     return Scaffold(
       backgroundColor: AromaColors.coffeeBackground,
