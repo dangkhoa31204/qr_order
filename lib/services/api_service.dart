@@ -337,7 +337,9 @@ class ApiService {
 
     final uri = Uri.parse("$baseUrl/api/orders/$orderId/status");
     final payloads = [
+      {"Status": status.value},
       {"status": status.value},
+      {"Status": status.valueString},
       {"status": status.valueString},
     ];
 
@@ -358,10 +360,6 @@ class ApiService {
         }
 
         lastResponse = patchResponse;
-        if (patchResponse.statusCode != 405 &&
-            patchResponse.statusCode != 400) {
-          break;
-        }
 
         final putResponse = await http
             .put(
@@ -376,9 +374,6 @@ class ApiService {
         }
 
         lastResponse = putResponse;
-        if (putResponse.statusCode != 405 && putResponse.statusCode != 400) {
-          break;
-        }
       }
 
       debugPrint(
@@ -409,20 +404,32 @@ class ApiService {
 
     if (_accessToken == null && useMockFallback) return true;
 
-    try {
-      final response = await http
-          .patch(
-            Uri.parse("$baseUrl/api/orders/$orderId/items/$orderItemId/status"),
-            headers: _authHeaders,
-            body: jsonEncode({"status": status.value}),
-          )
-          .timeout(const Duration(seconds: 10));
+    final payloads = [
+      {"Status": status.value},
+      {"status": status.value},
+    ];
 
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        return true;
+    try {
+      http.Response? lastResponse;
+      final uri = Uri.parse("$baseUrl/api/orders/$orderId/items/$orderItemId/status");
+
+      for (final payload in payloads) {
+        final response = await http
+            .patch(
+              uri,
+              headers: _authHeaders,
+              body: jsonEncode(payload),
+            )
+            .timeout(const Duration(seconds: 10));
+
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          return true;
+        }
+        lastResponse = response;
       }
+
       debugPrint(
-          '❌ Lỗi Cập Nhật Món $orderItemId: Server trả về ${response.statusCode} - ${response.body}');
+          '❌ Lỗi Cập Nhật Món $orderItemId: Server trả về ${lastResponse?.statusCode} - ${lastResponse?.body}');
       return useMockFallback;
     } catch (e) {
       debugPrint('❌ Lỗi Mạng Cập Nhật Món: $e');
