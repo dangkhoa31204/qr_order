@@ -212,6 +212,23 @@ class _AdminScreenState extends State<AdminScreen>
     final int totalCompletedOrders = paidOrders.length;
     final int activeTablesCount = widget.tables.where((t) => t.status == TableStatus.occupied).toList().length;
 
+    // Payment method breakdown
+    double cashSum = 0;
+    int cashCount = 0;
+    double onlineSum = 0;
+    int onlineCount = 0;
+
+    for (var o in paidOrders) {
+      final label = o.paymentMethodLabel?.toLowerCase() ?? '';
+      if (o.paymentMethod == 1 || label.contains('tiền mặt') || label.contains('cash')) {
+        cashSum += o.totalAmount;
+        cashCount++;
+      } else {
+        onlineSum += o.totalAmount;
+        onlineCount++;
+      }
+    }
+
     final now = DateTime.now();
     int thisWeekCount = 0;
     int thisMonthCount = 0;
@@ -230,6 +247,9 @@ class _AdminScreenState extends State<AdminScreen>
       }
     }
     
+    final screenWidth = MediaQuery.of(context).size.width;
+    final double gridAspectRatio = screenWidth > 900 ? 2.6 : (screenWidth > 600 ? 2.0 : 1.4);
+
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       child: Padding(
@@ -297,34 +317,42 @@ class _AdminScreenState extends State<AdminScreen>
               physics: const NeverScrollableScrollPhysics(),
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
-              childAspectRatio: 1.4,
+              childAspectRatio: gridAspectRatio,
               children: [
                 _buildMetricCard(
                   "TỔNG DOANH THU",
                   formatVND(totalRevenue),
                   Icons.monetization_on_rounded,
                   Colors.green,
+                  subtitle: "Doanh thu tích lũy toàn hệ thống",
                 ),
                 _buildMetricCard(
                   "ĐƠN HOÀN TẤT",
                   totalCompletedOrders.toString(),
                   Icons.shopping_bag_rounded,
                   Colors.blue,
+                  subtitle: "Tổng số đơn đã thanh toán",
                 ),
                 _buildMetricCard(
                   "TRUNG BÌNH ĐƠN",
                   formatVND(avgOrderValue),
                   Icons.receipt_long_rounded,
                   Colors.orange,
+                  subtitle: "Giá trị đơn hàng trung bình (AOV)",
                 ),
                 _buildMetricCard(
                   "BÀN ĐANG PHỤC VỤ",
                   "$activeTablesCount/${widget.tables.length}",
                   Icons.table_restaurant_rounded,
                   Colors.deepPurple,
+                  subtitle: "Số bàn có khách thực tế",
                 ),
               ],
             ),
+            const SizedBox(height: 16),
+
+            // Payment breakdown card (Online vs Offline)
+            _buildPaymentBreakdownCard(cashSum, cashCount, onlineSum, onlineCount),
             const SizedBox(height: 24),
             
             // Charts Section
@@ -367,7 +395,7 @@ class _AdminScreenState extends State<AdminScreen>
     );
   }
 
-  Widget _buildMetricCard(String title, String value, IconData icon, Color color) {
+  Widget _buildMetricCard(String title, String value, IconData icon, Color color, {String? subtitle}) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -378,7 +406,7 @@ class _AdminScreenState extends State<AdminScreen>
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -392,18 +420,146 @@ class _AdminScreenState extends State<AdminScreen>
                   letterSpacing: 0.5,
                 ),
               ),
-              Icon(icon, size: 20, color: color.withOpacity(0.8)),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 18, color: color),
+              ),
             ],
           ),
+          const SizedBox(height: 8),
           Text(
             value,
             style: const TextStyle(
-              fontSize: 16,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
               color: AromaColors.coffeeTextDark,
             ),
           ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                fontSize: 10,
+                color: AromaColors.coffeeTextSub,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentBreakdownCard(double cashSum, int cashCount, double onlineSum, int onlineCount) {
+    double total = cashSum + onlineSum;
+    double cashPercent = total > 0 ? (cashSum / total * 100) : 0;
+    double onlinePercent = total > 0 ? (onlineSum / total * 100) : 0;
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.account_balance_wallet_rounded, size: 20, color: AromaColors.coffeePrimary),
+                SizedBox(width: 8),
+                Text(
+                  "PHÂN TÍCH HÌNH THỨC THANH TOÁN",
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: AromaColors.coffeeTextDark,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                // Cash / Offline info
+                Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 4,
+                        height: 36,
+                        color: Colors.amber[700],
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "TIỀN MẶT / OFFLINE",
+                              style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AromaColors.coffeeTextSub),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              formatVND(cashSum),
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AromaColors.coffeeTextDark),
+                            ),
+                            Text(
+                              "$cashCount đơn hàng (${cashPercent.toStringAsFixed(1)}%)",
+                              style: const TextStyle(fontSize: 10, color: AromaColors.coffeeTextSub),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Online / Transfer info
+                Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 4,
+                        height: 36,
+                        color: Colors.blue[600],
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "ONLINE / CHUYỂN KHOẢN",
+                              style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AromaColors.coffeeTextSub),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              formatVND(onlineSum),
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AromaColors.coffeeTextDark),
+                            ),
+                            Text(
+                              "$onlineCount đơn hàng (${onlinePercent.toStringAsFixed(1)}%)",
+                              style: const TextStyle(fontSize: 10, color: AromaColors.coffeeTextSub),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
