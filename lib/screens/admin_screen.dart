@@ -6,6 +6,7 @@ import '../models/item_model.dart';
 import '../models/account_model.dart';
 import '../models/feedback_model.dart';
 import '../widgets/dashboard_charts.dart';
+import '../services/api_service.dart';
 import 'table_management_screen.dart';
 
 class AdminScreen extends StatefulWidget {
@@ -67,11 +68,28 @@ class AdminScreen extends StatefulWidget {
 class _AdminScreenState extends State<AdminScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  Map<String, dynamic>? _aiRecommendationData;
+  bool _isLoadingAiRecommendations = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
+    _fetchAiRecommendations();
+  }
+
+  Future<void> _fetchAiRecommendations() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoadingAiRecommendations = true;
+    });
+    final data = await ApiService.getDashboardRecommendations();
+    if (mounted) {
+      setState(() {
+        _aiRecommendationData = data;
+        _isLoadingAiRecommendations = false;
+      });
+    }
   }
 
   @override
@@ -266,6 +284,10 @@ class _AdminScreenState extends State<AdminScreen>
             const SizedBox(height: 18),
             // Real-time hôm nay (nổi bật)
             _buildRealtimeCard(widget.completedTodayCount),
+            const SizedBox(height: 16),
+            
+            // AI Recommendations Card
+            _buildAiRecommendationsCard(),
             const SizedBox(height: 16),
             
             // Statistics Grid
@@ -466,6 +488,117 @@ class _AdminScreenState extends State<AdminScreen>
                 size: 32,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAiRecommendationsCard() {
+    final summary = _aiRecommendationData?["summary"] as String? ?? "Đang kết nối AI để lấy đề xuất tối ưu...";
+    final recommendationsRaw = _aiRecommendationData?["recommendations"];
+    List<String> recommendations = [];
+    if (recommendationsRaw is List) {
+      recommendations = recommendationsRaw.map((e) => e.toString()).toList();
+    }
+
+    return Card(
+      elevation: 4,
+      shadowColor: AromaColors.coffeeGold.withValues(alpha: 0.3),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: AromaColors.coffeeGold.withValues(alpha: 0.5), width: 1.5),
+      ),
+      color: const Color(0xFF2B1C19),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AromaColors.coffeeGold.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.smart_toy_rounded,
+                        color: AromaColors.coffeeGold,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    const Text(
+                      "AI ĐỀ XUẤT DOANH SỐ & VẬN HÀNH",
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AromaColors.coffeeGold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+                IconButton(
+                  onPressed: _isLoadingAiRecommendations ? null : _fetchAiRecommendations,
+                  icon: _isLoadingAiRecommendations
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AromaColors.coffeeGold,
+                          ),
+                        )
+                      : const Icon(Icons.refresh_rounded, color: AromaColors.coffeeGold, size: 20),
+                  tooltip: "Tải lại đề xuất AI",
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              summary,
+              style: const TextStyle(
+                fontSize: 13,
+                fontStyle: FontStyle.italic,
+                color: Colors.white70,
+                height: 1.3,
+              ),
+            ),
+            if (recommendations.isNotEmpty) ...[
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Divider(color: Colors.white24, height: 1),
+              ),
+              ...recommendations.map((rec) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.only(top: 2),
+                          child: Icon(Icons.auto_awesome_rounded, color: AromaColors.coffeeGold, size: 16),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            rec,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.white,
+                              height: 1.35,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )),
+            ],
           ],
         ),
       ),

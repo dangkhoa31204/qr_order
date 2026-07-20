@@ -720,6 +720,31 @@ class ApiService {
       return {"success": false, "message": "Không thể kết nối AI voice parser."};
     }
   }
+
+  /// Lấy Đề xuất Tối ưu Vận hành & Doanh số AI cho Admin Dashboard
+  static Future<Map<String, dynamic>> getDashboardRecommendations() async {
+    try {
+      final response = await http
+          .get(
+            Uri.parse("$baseUrl/api/ai/dashboard-recommendations"),
+            headers: _authHeaders,
+          )
+          .timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return {
+        "summary": "Không thể lấy đề xuất từ AI (${response.statusCode})",
+        "recommendations": <String>[]
+      };
+    } catch (e) {
+      return {
+        "summary": "Không thể kết nối đến AI Microservice.",
+        "recommendations": <String>[]
+      };
+    }
+  }
 }
 
 /// Kết quả login: thành công hoặc thất bại kèm message chi tiết
