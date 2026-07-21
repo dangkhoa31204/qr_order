@@ -1,21 +1,50 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# 📱 Aroma Bistro - Flutter Mobile & Web Client Application
 
-# Run and deploy your AI Studio app
+> **Ứng dụng di động và Web gọi món tại bàn qua mã QR Code & Quản lý Nhà hàng Real-time.**
 
-This contains everything you need to run your app locally.
+---
 
-View your app in AI Studio: https://ai.studio/apps/39a339a5-b028-4ff7-8911-f38375ebe85f
+## 📌 1. Giới thiệu
 
-## Run Locally
+Đây là ứng dụng Frontend được xây dựng bằng **Flutter (Dart)**, hỗ trợ cả 2 nền tảng:
+1. **Flutter Web (dành cho Khách hàng)**: Quét mã QR code tại bàn để mở thực đơn điện tử, gọi món, chat với AI Sommelier, thanh toán VietQR và đánh giá dịch vụ mà không cần cài đặt ứng dụng.
+2. **Flutter Mobile & Web (dành cho Nhân viên & Admin)**: 
+   * **Staff Workspace**: Nhận thông báo đơn hàng real-time qua SignalR WebSockets, cập nhật trạng thái chế biến (Xác nhận ➔ Nấu món ➔ Phục vụ).
+   * **Admin Workspace**: Quản lý thực đơn (CRUD + Upload Cloudinary CDN), tạo bàn & xuất mã QR Code, quản lý tài khoản nhân viên, xem biểu đồ doanh thu & AI Recommendations.
 
-**Prerequisites:**  [Android Studio](https://developer.android.com/studio)
+---
 
+## 🛠️ 2. Hướng dẫn Chạy Ứng dụng (Run Locally)
 
-1. Open Android Studio
-2. Select **Open** and choose the directory containing this project
-3. Allow Android Studio to fix any incompatibilities as it imports the project.
-4. Create a file named `.env` in the project directory and set `GEMINI_API_KEY` in that file to your Gemini API key (see `.env.example` for an example)
-5. Remove this line from the app's `build.gradle.kts` file: `signingConfig = signingConfigs.getByName("debugConfig")`
-6. Run the app on an emulator or physical device
+### Yêu cầu tiên quyết:
+* Cài đặt **Flutter SDK (>=3.0.0)** và **Dart SDK**.
+* Hỗ trợ Google Chrome (dành cho Web) hoặc Android Emulator / thiết bị thật (dành cho Mobile).
+
+### Các bước chạy:
+1. Chuyển vào thư mục `qr_order`:
+   ```bash
+   cd qr_order
+   ```
+
+2. Tải các thư viện phụ thuộc:
+   ```bash
+   flutter pub get
+   ```
+
+3. Khởi chạy ứng dụng:
+   * **Chạy giao diện Web**:
+     ```bash
+     flutter run -d chrome
+     ```
+   * **Chạy ứng dụng Android**:
+     ```bash
+     flutter run
+     ```
+
+---
+
+## 🔗 3. Cấu hình Kết nối Backend API
+
+File cấu hình kết nối [api_service.dart](file:///d:/prmproject/qr_order/lib/services/api_service.dart) mặc định trỏ tới API Gateway:
+* Local URL: `http://localhost:5000`
+* Production URL: `https://prm-gateway.onrender.com`
